@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-0.2.4}"
+VERSION="${1:-0.3.0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="SunStatus"
@@ -50,6 +50,10 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSLocationUsageDescription</key>
+    <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
 </dict>
 </plist>
 PLIST
@@ -75,6 +79,7 @@ sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
 sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
 python3 "$ROOT_DIR/scripts/make-icns.py" "$ICONSET_DIR" "$RESOURCES_DIR/AppIcon.icns"
 
+xattr -cr "$APP_DIR"
 codesign --force --sign - "$APP_DIR"
 ditto -c -k --keepParent "$APP_DIR" "$ZIP_PATH"
 

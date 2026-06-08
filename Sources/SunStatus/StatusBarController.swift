@@ -17,6 +17,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
         configurePopover()
         configureStatusButton()
+        configureProviderUpdates()
         refresh()
 
         timer = Timer.scheduledTimer(
@@ -45,6 +46,19 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
     private func configurePopover() {
         popover.behavior = .transient
         popover.delegate = self
+    }
+
+    private func configureProviderUpdates() {
+        guard let refreshingProvider = provider as? any RefreshingDaylightProviding else {
+            return
+        }
+
+        refreshingProvider.onStatusChanged = { [weak self] in
+            Task { @MainActor in
+                self?.refresh()
+            }
+        }
+        refreshingProvider.start()
     }
 
     @objc private func refreshFromTimer() {
@@ -93,7 +107,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         )
 
         let controller = NSHostingController(rootView: view)
-        controller.preferredContentSize = NSSize(width: 340, height: 438)
+        controller.preferredContentSize = NSSize(width: 380, height: 520)
         return controller
     }
 
