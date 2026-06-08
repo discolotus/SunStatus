@@ -4,7 +4,7 @@ struct SettingsView: View {
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("showCountdownInMenuBar") private var showCountdownInMenuBar = true
     @AppStorage("updateIntervalMinutes") private var updateIntervalMinutes = 5.0
-    private let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.3"
+    private let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.4"
 
     var body: some View {
         Form {
@@ -39,6 +39,6 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .frame(width: 420)
-        .frame(minHeight: 340)
+        .frame(minHeight: 420)
     }
 }
