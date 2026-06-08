@@ -206,9 +206,24 @@ struct SunArcPoint {
 - Prepare privacy notes for location and weather usage.
 - Add a lightweight onboarding flow for permissions.
 - Produce a signed and notarized macOS release artifact suitable for direct distribution.
+- Produce an installable `.dmg` artifact with `SunStatus.app` and an Applications shortcut.
+- Attach both `.zip` and `.dmg` artifacts to GitHub releases when a release version lands on `main`.
+- Add release workflow checks that verify the `.dmg` mounts, contains the expected app bundle, and preserves the generated version metadata.
+- Decide whether the Homebrew cask should continue to use the `.zip` archive or switch to the `.dmg` once notarization is in place.
 - Create release archives with stable version tags and checksums.
 - Publish a Homebrew cask formula that installs the app from the release artifact.
 - Document the install command, update flow, and uninstall command for users.
+
+### 9. DMG and Notarized Distribution
+
+- Add a repeatable DMG creation script using native macOS tooling such as `hdiutil`.
+- Include `SunStatus.app`, an Applications folder shortcut, and a simple polished volume name/window layout.
+- Add Developer ID signing configuration for release builds.
+- Add Apple notarization and stapling steps once credentials are available in CI.
+- Update the GitHub release workflow to upload the notarized `.dmg` alongside the existing `.zip`.
+- Add CI validation that mounts the generated DMG, confirms the bundle identifier/version, and launches or inspects the app bundle without modifying user state.
+- Document direct-download install steps and expected Gatekeeper behavior.
+- Keep Homebrew distribution working while adding the friendlier DMG path for non-Homebrew users.
 
 ## Immediate Next Steps
 
@@ -223,6 +238,9 @@ Distribution work remains queued after the current map slice:
 
 - Decide the bundle identifier, minimum macOS version, and signing/notarization setup.
 - Add a repeatable release build process that outputs a signed `.app` inside a versioned archive.
+- Add a repeatable DMG build process that packages the app as a direct macOS install artifact.
+- Update the release workflow so version bumps on `main` attach the DMG artifact as well as the zip archive.
+- Validate DMG mount, app bundle contents, version metadata, and install flow in CI.
 - Tag releases consistently so Homebrew can target immutable download URLs.
 - Create a Homebrew tap, for example `tannerleo/homebrew-sunstatus`.
 - Add a `Casks/sunstatus.rb` cask that points to the release archive and verifies its SHA-256 checksum.
