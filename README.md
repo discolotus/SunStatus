@@ -4,7 +4,7 @@ SunStatus is a native macOS menu bar app for understanding the sun at a glance: 
 
 The app is intended to live primarily in the menu bar. The collapsed icon should communicate the sun's position and sunset proximity. The expanded popover should show a larger solar arc, sunrise and sunset times, brightness forecasts, and eventually a 3D map-based view of the sun path and shadow direction around a location.
 
-The current Homebrew build includes the mock daylight prototype: a menu bar status item, a SwiftUI daylight popover with a solar arc, brightness samples, a lightweight settings surface, and a 3D sun map prototype.
+The current source build includes location-aware solar calculations: a menu bar status item, a SwiftUI daylight popover with a calculated solar arc, solar-derived brightness samples, a lightweight settings surface, and a 3D sun map prototype.
 
 ## Requirements
 
@@ -30,6 +30,7 @@ brew install --cask discolotus/sunstatus/sunstatus
 ```
 
 See [ROADMAP.md](ROADMAP.md) for the implementation plan.
+See [Solar Angle Calculations](docs/solar-calculations.md) for the math and figures behind the real-time sun angle data.
 
 ## Current Status
 
@@ -37,11 +38,11 @@ The first foundation slice is implemented as a Swift Package with:
 
 - A macOS 14+ SwiftUI menu bar app target.
 - An `NSStatusItem` menu bar entry with a compact countdown.
-- A popover-style daylight panel with a mock solar arc, sunrise/sunset labels, brightness samples, and current readouts.
+- A popover-style daylight panel with a calculated solar arc, sunrise/sunset labels, solar-derived brightness samples, and current readouts.
 - A 3D panel with a MapKit satellite/elevation prototype, map-projected sun/shadow overlays, and a SceneKit companion model.
-- CoreLocation-backed map centering with a clear fallback state.
+- CoreLocation-backed map centering and solar calculations with a clear San Francisco fallback state.
 - A lightweight settings/about surface.
-- A testable `SunStatusCore` module with mock daylight data.
+- A testable `SunStatusCore` module with real solar-position data plus mock daylight fixtures for previews and tests.
 
 ## Requirements
 

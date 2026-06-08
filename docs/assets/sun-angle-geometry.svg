@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+  <title id="title">Solar elevation and azimuth geometry</title>
+  <desc id="desc">Diagram showing a horizon plane with north and east axes, a sun ray above the horizon, elevation angle, azimuth angle, and shadow bearing opposite the sun.</desc>
+  <defs>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="520" fill="#f8fafc"/>
+  <text x="48" y="58" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="700" fill="#0f172a">Solar angle geometry</text>
+  <text x="48" y="88" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" fill="#475569">Elevation is height above the horizon. Azimuth is compass bearing clockwise from north.</text>
+
+  <ellipse cx="430" cy="330" rx="320" ry="112" fill="#e0f2fe" stroke="#94a3b8" stroke-width="2"/>
+  <ellipse cx="430" cy="330" rx="190" ry="67" fill="none" stroke="#bae6fd" stroke-width="2"/>
+  <line x1="430" y1="330" x2="430" y2="150" stroke="#64748b" stroke-width="2" stroke-dasharray="7 7"/>
+  <line x1="430" y1="330" x2="430" y2="115" stroke="#64748b" stroke-width="2" stroke-dasharray="4 7"/>
+  <text x="442" y="146" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" fill="#64748b">local vertical</text>
+
+  <line x1="430" y1="330" x2="430" y2="155" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow-blue)"/>
+  <text x="408" y="139" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700" fill="#2563eb">N</text>
+  <line x1="430" y1="330" x2="664" y2="330" stroke="#2563eb" stroke-width="4" marker-end="url(#arrow-blue)"/>
+  <text x="680" y="337" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700" fill="#2563eb">E</text>
+  <line x1="430" y1="330" x2="430" y2="432" stroke="#64748b" stroke-width="3" marker-end="url(#arrow-gray)"/>
+  <text x="409" y="468" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#64748b">S</text>
+  <line x1="430" y1="330" x2="232" y2="330" stroke="#64748b" stroke-width="3" marker-end="url(#arrow-gray)"/>
+  <text x="199" y="337" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#64748b">W</text>
+
+  <line x1="430" y1="330" x2="610" y2="260" stroke="#0f766e" stroke-width="3" stroke-dasharray="8 6"/>
+  <line x1="430" y1="330" x2="610" y2="120" stroke="#d97706" stroke-width="5" marker-end="url(#arrow-orange)" filter="url(#soft-shadow)"/>
+  <circle cx="638" cy="92" r="28" fill="#facc15" stroke="#d97706" stroke-width="4" filter="url(#soft-shadow)"/>
+  <path d="M 610 260 A 145 145 0 0 1 603 129" fill="none" stroke="#d97706" stroke-width="4"/>
+  <text x="626" y="205" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#d97706">elevation</text>
+
+  <path d="M 430 222 A 111 111 0 0 1 538 287" fill="none" stroke="#2563eb" stroke-width="4"/>
+  <text x="511" y="239" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#2563eb">azimuth</text>
+
+  <line x1="430" y1="330" x2="265" y2="402" stroke="#334155" stroke-width="4" marker-end="url(#arrow-gray)"/>
+  <text x="164" y="420" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" font-weight="700" fill="#334155">shadow bearing</text>
+  <text x="164" y="440" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" fill="#64748b">azimuth + 180 deg</text>
+
+  <circle cx="430" cy="330" r="9" fill="#0f172a"/>
+  <text x="447" y="356" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#0f172a">observer</text>
+
+  <rect x="650" y="330" width="230" height="108" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="672" y="360" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#0f172a">SunStatus stores</text>
+  <text x="672" y="386" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" fill="#475569">elevationDegrees</text>
+  <text x="672" y="410" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" fill="#475569">azimuthDegrees</text>
+  <text x="672" y="434" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" fill="#475569">shadow = azimuth + 180 deg</text>
+</svg>

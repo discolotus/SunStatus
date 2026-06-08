@@ -2,6 +2,17 @@
 
 All notable changes to SunStatus will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added `SolarDaylightProvider` for coordinate-correct sunrise, sunset, solar noon, solar elevation, solar azimuth, daylight progress, and sun-path samples.
+- Added XCTest coverage for calculated solar events, daylight angle ranges, night behavior, and arc sampling.
+
+### Changed
+
+- Updated `LocationAwareDaylightProvider` to feed CoreLocation coordinates into real solar calculations instead of the mock daylight provider.
+
 ## [0.3.0] - 2026-06-08
 
 ### Added

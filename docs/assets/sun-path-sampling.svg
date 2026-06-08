@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" role="img" aria-labelledby="title desc">
+  <title id="title">Daily sun path sampling</title>
+  <desc id="desc">Diagram showing sunrise, solar noon, sunset, current sun position, and thirteen samples along the daylight arc.</desc>
+  <defs>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+    <linearGradient id="arc-gradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="45%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="470" fill="#f8fafc"/>
+  <text x="48" y="58" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="700" fill="#0f172a">Daily path samples</text>
+  <text x="48" y="88" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" fill="#475569">The app calculates sunrise, solar noon, sunset, then samples the arc used by the popover and 3D map.</text>
+
+  <line x1="90" y1="355" x2="810" y2="355" stroke="#94a3b8" stroke-width="3"/>
+  <text x="88" y="390" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#475569">sunrise</text>
+  <text x="412" y="390" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#475569">solar noon</text>
+  <text x="756" y="390" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#475569">sunset</text>
+
+  <path d="M 110 355 C 220 150 340 92 450 92 C 560 92 680 150 790 355" fill="none" stroke="#cbd5e1" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 110 355 C 220 150 340 92 450 92 C 560 92 680 150 790 355" fill="none" stroke="url(#arc-gradient)" stroke-width="7" stroke-linecap="round"/>
+
+  <g fill="#ffffff" stroke="#d97706" stroke-width="3">
+    <circle cx="110" cy="355" r="9"/>
+    <circle cx="168" cy="269" r="8"/>
+    <circle cx="225" cy="203" r="8"/>
+    <circle cx="279" cy="153" r="8"/>
+    <circle cx="334" cy="119" r="8"/>
+    <circle cx="392" cy="99" r="8"/>
+    <circle cx="450" cy="92" r="9"/>
+    <circle cx="508" cy="99" r="8"/>
+    <circle cx="566" cy="119" r="8"/>
+    <circle cx="621" cy="153" r="8"/>
+    <circle cx="675" cy="203" r="8"/>
+    <circle cx="732" cy="269" r="8"/>
+    <circle cx="790" cy="355" r="9"/>
+  </g>
+
+  <circle cx="566" cy="119" r="24" fill="#facc15" stroke="#d97706" stroke-width="4" filter="url(#soft-shadow)"/>
+  <line x1="566" y1="119" x2="566" y2="355" stroke="#d97706" stroke-width="3" stroke-dasharray="7 7"/>
+  <text x="586" y="123" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" font-weight="700" fill="#92400e">current sample</text>
+  <text x="586" y="145" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" fill="#92400e">elevation + azimuth</text>
+
+  <rect x="104" y="300" width="84" height="30" rx="15" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="124" y="320" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#9a3412">progress 0</text>
+  <rect x="406" y="122" width="100" height="30" rx="15" fill="#fef9c3" stroke="#fde047"/>
+  <text x="423" y="142" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#854d0e">progress 0.5</text>
+  <rect x="710" y="300" width="88" height="30" rx="15" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="732" y="320" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#9a3412">progress 1</text>
+
+  <rect x="84" y="414" width="732" height="36" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="106" y="437" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" fill="#334155">Each point becomes a SunArcPoint(date, progress, elevationDegrees, azimuthDegrees, brightnessScore).</text>
+</svg>

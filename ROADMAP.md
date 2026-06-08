@@ -151,10 +151,11 @@ struct SunArcPoint {
 
 ### 2. Astronomy Engine
 
-- Implement sunrise and sunset calculations for a date and coordinate.
-- Compute solar elevation, azimuth, solar noon, and daylight progress.
-- Add unit tests for representative locations, including polar-day and polar-night edge cases.
-- Wire real astronomy data into the menu bar icon and popover arc.
+- [x] Implement sunrise and sunset calculations for a date and coordinate.
+- [x] Compute solar elevation, azimuth, solar noon, and daylight progress.
+- [x] Add unit tests for representative mid-latitude day and night scenarios.
+- [ ] Add unit tests for polar-day and polar-night edge cases.
+- [x] Wire real astronomy data into the menu bar icon and popover arc.
 
 ### 3. Location Support
 
@@ -180,7 +181,7 @@ struct SunArcPoint {
 ### 6. 3D Map and Sun Path
 
 - [x] Add a MapKit-based satellite/realistic-elevation prototype view.
-- [x] Overlay map-projected mock sun path, current sun vector, and shadow bearing.
+- [x] Overlay map-projected calculated sun path, current sun vector, and shadow bearing.
 - [x] Center on the user's current location by default when CoreLocation is authorized.
 - [ ] Recompute the overlay for a user-selected map coordinate.
 - [x] Keep the SceneKit sky-dome model available as a companion precision view.
@@ -189,7 +190,7 @@ struct SunArcPoint {
 - [ ] Research building-aware shadows and 3D tiles only after the MapKit overlay MVP is useful.
 - [x] Add a native SceneKit 3D sun-angle prototype in the popover.
 - [x] Allow orbit/zoom inspection in the SceneKit prototype.
-- [x] Overlay the mock sun path in 3D space.
+- [x] Overlay the calculated sun path in 3D space.
 - [x] Show current sun vector and approximate shadow direction.
 - [x] Add a time scrubber for previewing future shadow angles.
 
@@ -227,12 +228,12 @@ struct SunArcPoint {
 
 ## Immediate Next Steps
 
-The next active work should focus on the 3D map MVP:
+The next active work should focus on finishing the interactive parts of the 3D map MVP:
 
-- Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
-- Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the current mock coordinate.
+- Recompute the MapKit overlay for a user-selected map coordinate.
+- Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the active coordinate.
 - Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
-- Add real astronomy data before treating the MapKit overlay as physically trustworthy.
+- Add polar-day and polar-night regression tests for the astronomy provider.
 
 Distribution work remains queued after the current map slice:
 
