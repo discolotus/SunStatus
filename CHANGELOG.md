@@ -2,6 +2,18 @@
 
 All notable changes to SunStatus will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added `SolarPositionCalculator`, a real solar-position engine implementing the NOAA / Meeus algorithm. It computes refraction-corrected solar elevation and azimuth for any instant, plus sunrise, solar noon, and sunset for any date and coordinate, including polar-day and polar-night handling.
+- Added `SolarDaylightProvider`, a `DaylightProviding` implementation backed by the new engine. It generates coordinate-correct solar snapshots and sampled sun-path arc points, with a clear-sky, elevation-driven brightness heuristic.
+- Added unit tests covering declination at the solstices and equinoxes, solar-noon geometry, sunrise/sunset symmetry, output ranges, and polar edge cases.
+
+### Changed
+
+- `LocationAwareDaylightProvider` now uses `SolarDaylightProvider` instead of the sine-curve `MockDaylightProvider`, so the menu bar arc, popover readouts, and 2D/3D sun-path overlays are driven by real astronomy and can be treated as physically trustworthy. `MockDaylightProvider` is retained for SwiftUI previews and test fixtures.
+
 ## [0.3.0] - 2026-06-08
 
 ### Added

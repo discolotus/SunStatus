@@ -28,7 +28,7 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
 
     func status(at date: Date = .now) -> DaylightStatus {
         let state = currentLocationState()
-        let provider = MockDaylightProvider(
+        let provider = SolarDaylightProvider(
             locationName: state.locationName,
             coordinate: state.coordinate,
             timezone: state.timezone

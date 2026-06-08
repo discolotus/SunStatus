@@ -151,10 +151,14 @@ struct SunArcPoint {
 
 ### 2. Astronomy Engine
 
-- Implement sunrise and sunset calculations for a date and coordinate.
-- Compute solar elevation, azimuth, solar noon, and daylight progress.
-- Add unit tests for representative locations, including polar-day and polar-night edge cases.
-- Wire real astronomy data into the menu bar icon and popover arc.
+- [x] Implement sunrise and sunset calculations for a date and coordinate.
+- [x] Compute solar elevation, azimuth, solar noon, and daylight progress.
+- [x] Add unit tests for representative locations, including polar-day and polar-night edge cases.
+- [x] Wire real astronomy data into the menu bar icon and popover arc.
+
+Implemented in `SolarPositionCalculator` (NOAA / Meeus solar position algorithm) and surfaced
+through `SolarDaylightProvider`, which replaces the sine-curve `MockDaylightProvider` on the
+production path. `MockDaylightProvider` is retained for SwiftUI previews and fixtures.
 
 ### 3. Location Support
 
@@ -229,10 +233,12 @@ struct SunArcPoint {
 
 The next active work should focus on the 3D map MVP:
 
-- Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
-- Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the current mock coordinate.
-- Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
-- Add real astronomy data before treating the MapKit overlay as physically trustworthy.
+- [x] Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
+- [x] Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the selected coordinate.
+- [x] Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
+- [x] Add real astronomy data before treating the MapKit overlay as physically trustworthy. The overlay now reads from `SolarPositionCalculator`.
+- Synchronize the SceneKit model orientation with the MapKit camera heading and pitch.
+- Recompute the overlay for a user-selected map coordinate rather than only the current location.
 
 Distribution work remains queued after the current map slice:
 
