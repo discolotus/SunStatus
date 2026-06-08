@@ -18,7 +18,7 @@ The script outputs `.build/release/SunStatus.zip` and prints the SHA-256 checksu
 
 ## Install
 
-Once a release is published, install SunStatus with Homebrew:
+Install SunStatus with Homebrew:
 
 ```sh
 brew install --cask discolotus/sunstatus/sunstatus
