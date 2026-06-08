@@ -6,4 +6,22 @@ The app is intended to live primarily in the menu bar. The collapsed icon should
 
 The next release goal is to publish SunStatus so it can be installed with Homebrew.
 
+## Build
+
+Build a release archive locally:
+
+```sh
+scripts/build-release.sh 0.1.0
+```
+
+The script outputs `.build/release/SunStatus.zip` and prints the SHA-256 checksum used by the Homebrew cask.
+
+## Install
+
+Once a release is published, install SunStatus with Homebrew:
+
+```sh
+brew install --cask discolotus/sunstatus/sunstatus
+```
+
 See [ROADMAP.md](ROADMAP.md) for the implementation plan.
