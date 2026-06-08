@@ -10,7 +10,7 @@ struct SunStatusPopoverView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
             header
 
             SolarArcView(status: status)
@@ -23,27 +23,28 @@ struct SunStatusPopoverView: View {
 
             footer
         }
-        .padding(18)
-        .frame(width: 360)
+        .padding(14)
+        .frame(width: 340)
+        .fixedSize(horizontal: false, vertical: true)
         .background(.regularMaterial)
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
                     .fill(radialGradient)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 52, height: 52)
 
                 Image(systemName: symbolName)
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 25, weight: .semibold))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(status.brightness.classification.displayName)
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .font(.system(size: 21, weight: .semibold, design: .rounded))
 
                 Text(nextTransitionText)
                     .font(.system(size: 13, weight: .medium))
@@ -95,7 +96,7 @@ struct SunStatusPopoverView: View {
     }
 
     private var metrics: some View {
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+        Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow {
                 MetricTile(title: "Brightness", value: "\(Int(status.brightness.score * 100))%", symbolName: "circle.lefthalf.filled")
                 MetricTile(title: "UV", value: status.brightness.uvIndex.map(String.init) ?? "-", symbolName: "sun.max")
@@ -186,14 +187,14 @@ private struct MetricTile: View {
                     .foregroundStyle(.secondary)
 
                 Text(value)
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .monospacedDigit()
             }
 
             Spacer(minLength: 0)
         }
-        .padding(10)
-        .frame(minWidth: 150, minHeight: 58)
+        .padding(9)
+        .frame(minWidth: 140, minHeight: 52)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }

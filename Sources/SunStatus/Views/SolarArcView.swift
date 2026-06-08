@@ -7,7 +7,7 @@ struct SolarArcView: View {
     var body: some View {
         VStack(spacing: 8) {
             Canvas { context, size in
-                let geometry = SolarArcGeometry(size: size, verticalOffset: 18)
+                let geometry = SolarArcGeometry(size: size, verticalOffset: 14)
 
                 drawHorizon(in: context, size: size)
                 drawFutureArc(in: context, geometry: geometry)
@@ -15,7 +15,7 @@ struct SolarArcView: View {
                 drawBrightnessArc(in: context, geometry: geometry)
                 drawSun(in: context, geometry: geometry)
             }
-            .frame(height: 150)
+            .frame(height: 116)
 
             HStack {
                 Text(timeText(status.solar.sunrise))
@@ -34,8 +34,8 @@ struct SolarArcView: View {
 
     private func drawHorizon(in context: GraphicsContext, size: CGSize) {
         var horizon = Path()
-        horizon.move(to: CGPoint(x: 8, y: size.height - 18))
-        horizon.addLine(to: CGPoint(x: size.width - 8, y: size.height - 18))
+        horizon.move(to: CGPoint(x: 8, y: size.height - 14))
+        horizon.addLine(to: CGPoint(x: size.width - 8, y: size.height - 14))
         context.stroke(horizon, with: .color(.secondary.opacity(0.28)), lineWidth: 1)
     }
 

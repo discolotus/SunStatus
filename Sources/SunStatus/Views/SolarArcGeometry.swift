@@ -7,8 +7,9 @@ struct SolarArcGeometry {
 
     func point(at progress: Double) -> CGPoint {
         let clampedProgress = min(max(progress, 0), 1)
-        let radius = min(size.width * 0.45, size.height * 0.92)
         let center = CGPoint(x: size.width / 2, y: size.height - verticalOffset)
+        let topPadding = max(size.height * 0.06, 4)
+        let radius = min(size.width * 0.45, max(center.y - topPadding, 1))
         let angle = .pi - (clampedProgress * .pi)
 
         return CGPoint(

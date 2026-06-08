@@ -92,7 +92,9 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
             }
         )
 
-        return NSHostingController(rootView: view)
+        let controller = NSHostingController(rootView: view)
+        controller.preferredContentSize = NSSize(width: 340, height: 438)
+        return controller
     }
 
     private func menuTitle(for status: DaylightStatus) -> String {
