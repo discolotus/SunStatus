@@ -182,12 +182,27 @@ struct SunArcPoint {
 - Add robust offline and permission-denied states.
 - Add accessibility labels and keyboard navigation.
 
-### 8. Distribution Prep
+### 8. Homebrew Distribution Prep
 
 - Add app icon, signing configuration, and release build settings.
 - Prepare privacy notes for location and weather usage.
 - Add a lightweight onboarding flow for permissions.
-- Evaluate direct distribution versus Mac App Store packaging.
+- Produce a signed and notarized macOS release artifact suitable for direct distribution.
+- Create release archives with stable version tags and checksums.
+- Publish a Homebrew cask formula that installs the app from the release artifact.
+- Document the install command, update flow, and uninstall command for users.
+
+## Immediate Next Steps
+
+The next active work should focus on making SunStatus installable through Homebrew:
+
+- Decide the bundle identifier, minimum macOS version, and signing/notarization setup.
+- Add a repeatable release build process that outputs a signed `.app` inside a versioned archive.
+- Tag releases consistently so Homebrew can target immutable download URLs.
+- Create a Homebrew tap, for example `tannerleo/homebrew-sunstatus`.
+- Add a `Casks/sunstatus.rb` cask that points to the release archive and verifies its SHA-256 checksum.
+- Update the README with the Homebrew installation command once the tap and first release exist.
+- Validate install, launch, upgrade, and uninstall behavior locally through Homebrew.
 
 ## First Feature Branch Scope
 
