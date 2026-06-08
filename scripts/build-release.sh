@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-0.1.1}"
+VERSION="${1:-0.2.0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="SunStatus"
@@ -10,15 +10,16 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
-SOURCE_FILE="$ROOT_DIR/Sources/SunStatus/main.swift"
+SWIFTPM_BUILD_DIR="$BUILD_DIR/swiftpm"
 ICON_SOURCE="$ROOT_DIR/Assets/AppIcon.png"
 ICONSET_DIR="$BUILD_DIR/AppIcon.iconset"
 ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
-SDK_PATH="$(xcrun --show-sdk-path --sdk macosx)"
-DEPLOYMENT_TARGET="13.0"
+DEPLOYMENT_TARGET="14.0"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$MODULE_CACHE_DIR" "$ICONSET_DIR"
+export CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
+export SWIFT_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -53,12 +54,14 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
-swiftc "$SOURCE_FILE" \
-    -target arm64-apple-macos"$DEPLOYMENT_TARGET" \
-    -sdk "$SDK_PATH" \
-    -framework AppKit \
-    -module-cache-path "$MODULE_CACHE_DIR" \
-    -o "$MACOS_DIR/$APP_NAME"
+swift build \
+    --configuration release \
+    --product "$APP_NAME" \
+    --build-path "$SWIFTPM_BUILD_DIR" \
+    -Xswiftc -module-cache-path \
+    -Xswiftc "$MODULE_CACHE_DIR"
+
+cp "$SWIFTPM_BUILD_DIR/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 
 sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
 sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
