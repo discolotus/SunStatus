@@ -11,7 +11,7 @@ The next release goal is to publish SunStatus so it can be installed with Homebr
 Build a release archive locally:
 
 ```sh
-scripts/build-release.sh 0.1.0
+scripts/build-release.sh 0.1.1
 ```
 
 The script outputs `.build/release/SunStatus.zip` and prints the SHA-256 checksum used by the Homebrew cask.
