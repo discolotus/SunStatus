@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func showSettingsWindow() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 340),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.title = "SunStatus Settings"
             window.center()
             window.contentViewController = NSHostingController(rootView: SettingsView())
-            window.setContentSize(NSSize(width: 420, height: 280))
+            window.setContentSize(NSSize(width: 420, height: 340))
             settingsWindow = window
         }
 
