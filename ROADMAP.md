@@ -125,18 +125,18 @@ struct SunArcPoint {
 
 ### 0. Project Foundation
 
-- Create the repository, roadmap, and basic project documentation.
-- Define minimum supported macOS version.
-- Decide whether to scaffold with a plain Swift Package plus app target or a standard Xcode project.
-- Establish branch naming, formatting, and test conventions.
+- [x] Create the repository, roadmap, and basic project documentation.
+- [x] Define minimum supported macOS version: macOS 14+ for the first SwiftUI/AppKit menu bar implementation.
+- [x] Decide whether to scaffold with a plain Swift Package plus app target or a standard Xcode project: start with a Swift Package app target for fast local iteration, defer app bundle/signing details to distribution prep.
+- [x] Establish branch naming, formatting, and test conventions: use `codex/` feature branches, Swift Package defaults, and focused XCTest coverage for deterministic core logic.
 
 ### 1. Simple Native Menu Bar App
 
-- Scaffold a macOS Swift app.
-- Add a menu bar item using native APIs.
-- Open a SwiftUI popover when clicked.
-- Render placeholder sun position states with mock data.
-- Add a lightweight settings/about surface.
+- [x] Scaffold a macOS Swift app.
+- [x] Add a menu bar item using native APIs.
+- [x] Open a SwiftUI popover when clicked.
+- [x] Render placeholder sun position states with mock data.
+- [x] Add a lightweight settings/about surface.
 
 ### 2. Astronomy Engine
 
@@ -208,12 +208,12 @@ The next active work should focus on making SunStatus installable through Homebr
 
 The first implementation branch should stay focused on the simple surface:
 
-- Scaffold the native macOS app.
-- Add the menu bar item.
-- Add an expanded popover.
-- Draw a mock solar arc with sunrise and sunset labels.
-- Use mock brightness samples along the arc.
-- Leave real location, weather, and 3D map work for later branches.
+- [x] Scaffold the native macOS app.
+- [x] Add the menu bar item.
+- [x] Add an expanded popover.
+- [x] Draw a mock solar arc with sunrise and sunset labels.
+- [x] Use mock brightness samples along the arc.
+- [x] Leave real location, weather, and 3D map work for later branches.
 
 Recommended branch name: `codex/menu-bar-foundation`.
 

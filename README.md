@@ -30,3 +30,30 @@ brew install --cask discolotus/sunstatus/sunstatus
 ```
 
 See [ROADMAP.md](ROADMAP.md) for the implementation plan.
+
+## Current Status
+
+The first foundation slice is implemented as a Swift Package with:
+
+- A macOS 14+ SwiftUI menu bar app target.
+- An `NSStatusItem` menu bar entry with a compact countdown.
+- A popover-style daylight panel with a mock solar arc, sunrise/sunset labels, brightness samples, and current readouts.
+- A lightweight settings/about surface.
+- A testable `SunStatusCore` module with mock daylight data.
+
+## Requirements
+
+- macOS 14 or newer.
+- Xcode with Swift 6 support.
+
+## Run
+
+```sh
+swift run SunStatus
+```
+
+## Test
+
+```sh
+swift test
+```
