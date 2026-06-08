@@ -49,6 +49,16 @@ The primary interaction model is a menu bar item with a compact live icon. Click
 - Show the current sun vector and approximate shadow direction.
 - Eventually support scrubbed time-of-day interaction so users can preview shadow angles.
 
+### Apple Maps 3D Implementation Plan
+
+Apple Maps integration should be built in phases because public MapKit APIs can provide realistic satellite/elevation maps and map overlays, but they do not expose editable 3D satellite/building mesh geometry to SceneKit.
+
+- Phase 1: Add a MapKit-backed satellite view using realistic elevation, centered on the selected coordinate, and draw map-projected sun path, current sun vector, and shadow bearing overlays from the existing `SunPathSample3D` data.
+- Phase 2: Add CoreLocation-backed centering and map selection so the overlay recomputes for the user's current or inspected coordinate.
+- Phase 3: Synchronize the existing SceneKit sky-dome model with the MapKit camera heading and pitch, keeping the SceneKit prototype as the precision visualization layer.
+- Phase 4: Research building-aware shadows only after the useful MapKit overlay is working. If true occlusion or building-height shadows become essential, evaluate non-MapKit sources such as OSM building extrusions, 3D tiles, Mapbox, Cesium, or ArcGIS.
+- MVP success: users can open the 3D tab, see real satellite/elevation context, scrub time, and understand the sun bearing and approximate surface shadow direction over the selected map location.
+
 ## Architecture
 
 ### App Shell
@@ -84,9 +94,10 @@ The primary interaction model is a menu bar item with a compact live icon. Click
   - Keeps visual components previewable with mock data.
 
 - `SunMap3D`
-  - Hosts MapKit satellite/3D map presentation.
-  - Converts solar azimuth/elevation into a visible path and shadow direction overlay.
-  - Remains optional until the simpler daylight UI is reliable.
+  - Hosts MapKit satellite/realistic-elevation map presentation.
+  - Converts solar azimuth/elevation into visible map-projected path, sun vector, and shadow direction overlays.
+  - Keeps the SceneKit model as a precision sky-dome companion rather than depending on MapKit to expose editable 3D mesh data.
+  - Remains optional until location, astronomy, and simpler daylight UI are reliable.
 
 ## Data Model Sketch
 
@@ -147,9 +158,9 @@ struct SunArcPoint {
 
 ### 3. Location Support
 
-- Request CoreLocation authorization.
-- Use current location when permission is granted.
-- Show a clear fallback state when permission is denied.
+- [x] Request CoreLocation authorization.
+- [x] Use current location when permission is granted.
+- [x] Show a clear fallback state when permission is denied.
 - Add manual location selection as a later fallback if needed.
 
 ### 4. Brightness Forecast
@@ -168,8 +179,14 @@ struct SunArcPoint {
 
 ### 6. 3D Map and Sun Path
 
-- [ ] Add a MapKit-based satellite view.
-- [ ] Center on the user's current location by default.
+- [x] Add a MapKit-based satellite/realistic-elevation prototype view.
+- [x] Overlay map-projected mock sun path, current sun vector, and shadow bearing.
+- [x] Center on the user's current location by default when CoreLocation is authorized.
+- [ ] Recompute the overlay for a user-selected map coordinate.
+- [x] Keep the SceneKit sky-dome model available as a companion precision view.
+- [x] Move model cardinal labels into SceneKit world space so they shift with camera orbit.
+- [ ] Synchronize SceneKit overlay orientation with MapKit camera heading/pitch.
+- [ ] Research building-aware shadows and 3D tiles only after the MapKit overlay MVP is useful.
 - [x] Add a native SceneKit 3D sun-angle prototype in the popover.
 - [x] Allow orbit/zoom inspection in the SceneKit prototype.
 - [x] Overlay the mock sun path in 3D space.
@@ -195,7 +212,14 @@ struct SunArcPoint {
 
 ## Immediate Next Steps
 
-The next active work should focus on making SunStatus installable through Homebrew:
+The next active work should focus on the 3D map MVP:
+
+- Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
+- Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the current mock coordinate.
+- Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
+- Add real astronomy data before treating the MapKit overlay as physically trustworthy.
+
+Distribution work remains queued after the current map slice:
 
 - Decide the bundle identifier, minimum macOS version, and signing/notarization setup.
 - Add a repeatable release build process that outputs a signed `.app` inside a versioned archive.

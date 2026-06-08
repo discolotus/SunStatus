@@ -7,6 +7,7 @@ struct SunPath3DPanel: View {
     let status: DaylightStatus
 
     @State private var previewProgress = 0.5
+    @State private var displayMode: SunPath3DDisplayMode = .map
 
     private var pathSamples: [SunPathSample3D] {
         SunPathGeometry.samples(from: status.arcPoints)
@@ -18,14 +19,30 @@ struct SunPath3DPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ZStack {
-                SunPath3DSceneView(pathSamples: pathSamples, selectedSample: selectedSample)
-                    .frame(height: 200)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                compassOverlay
+            Picker("3D view", selection: $displayMode) {
+                ForEach(SunPath3DDisplayMode.allCases, id: \.self) { mode in
+                    Label(mode.title, systemImage: mode.symbolName)
+                        .tag(mode)
+                }
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+
+            ZStack {
+                switch displayMode {
+                case .map:
+                    SunMap3DView(
+                        centerCoordinate: status.solar.location,
+                        pathSamples: pathSamples,
+                        selectedSample: selectedSample
+                    )
+                case .model:
+                    SunPath3DSceneView(pathSamples: pathSamples, selectedSample: selectedSample)
+                }
+            }
+            .frame(height: 210)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             angleReadouts
 
@@ -56,28 +73,6 @@ struct SunPath3DPanel: View {
         .accessibilityLabel(accessibilitySummary)
     }
 
-    private var compassOverlay: some View {
-        VStack {
-            Text("N")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer()
-            HStack {
-                Text("W")
-                Spacer()
-                Text("E")
-            }
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.secondary)
-            Spacer()
-            Text("S")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-        }
-        .padding(10)
-        .allowsHitTesting(false)
-    }
-
     private var angleReadouts: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow {
@@ -101,7 +96,7 @@ struct SunPath3DPanel: View {
     }
 
     private var accessibilitySummary: String {
-        "3D sun path, elevation \(degreesText(selectedSample.elevationDegrees)), azimuth \(bearingText(selectedSample.azimuthDegrees)), shadow \(shadowText)"
+        "\(displayMode.accessibilityName), elevation \(degreesText(selectedSample.elevationDegrees)), azimuth \(bearingText(selectedSample.azimuthDegrees)), shadow \(shadowText)"
     }
 
     private func degreesText(_ degrees: Double) -> String {
@@ -134,6 +129,32 @@ struct SunPath3DPanel: View {
         formatter.dateStyle = .none
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+private enum SunPath3DDisplayMode: CaseIterable {
+    case map
+    case model
+
+    var title: String {
+        switch self {
+        case .map: "Map"
+        case .model: "Model"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .map: "map"
+        case .model: "cube.transparent"
+        }
+    }
+
+    var accessibilityName: String {
+        switch self {
+        case .map: "3D satellite sun map"
+        case .model: "3D sun path model"
+        }
     }
 }
 
@@ -198,6 +219,7 @@ private enum SunPathSceneFactory {
         scene.rootNode.addChildNode(keyLightNode())
         scene.rootNode.addChildNode(gridNode())
         scene.rootNode.addChildNode(horizonNode())
+        scene.rootNode.addChildNode(cardinalLabelsNode())
         scene.rootNode.addChildNode(pathNode(samples: pathSamples))
         scene.rootNode.addChildNode(pathMarkersNode(samples: pathSamples))
         scene.rootNode.addChildNode(currentSunNode(sample: selectedSample))
@@ -270,6 +292,46 @@ private enum SunPathSceneFactory {
         }
 
         return connectedLineNode(points: points, color: NSColor.secondaryLabelColor.withAlphaComponent(0.42))
+    }
+
+    private static func cardinalLabelsNode() -> SCNNode {
+        let parent = SCNNode()
+        let radius: Float = 1.92
+        let labels: [(String, SCNVector3)] = [
+            ("N", SCNVector3(0, 0.08, -radius)),
+            ("E", SCNVector3(radius, 0.08, 0)),
+            ("S", SCNVector3(0, 0.08, radius)),
+            ("W", SCNVector3(-radius, 0.08, 0))
+        ]
+
+        for (label, position) in labels {
+            parent.addChildNode(cardinalLabelNode(label, position: position))
+        }
+
+        return parent
+    }
+
+    private static func cardinalLabelNode(_ label: String, position: SCNVector3) -> SCNNode {
+        let text = SCNText(string: label, extrusionDepth: 0)
+        text.font = NSFont.systemFont(ofSize: 15, weight: .semibold)
+        text.flatness = 0.2
+        text.materials = [lineMaterial(color: NSColor.secondaryLabelColor.withAlphaComponent(0.75))]
+
+        let node = SCNNode(geometry: text)
+        let (minimum, maximum) = text.boundingBox
+        node.pivot = SCNMatrix4MakeTranslation(
+            (minimum.x + maximum.x) / 2,
+            (minimum.y + maximum.y) / 2,
+            0
+        )
+        node.position = position
+        node.scale = SCNVector3(0.012, 0.012, 0.012)
+
+        let constraint = SCNBillboardConstraint()
+        constraint.freeAxes = .Y
+        node.constraints = [constraint]
+
+        return node
     }
 
     private static func pathNode(samples: [SunPathSample3D]) -> SCNNode {
