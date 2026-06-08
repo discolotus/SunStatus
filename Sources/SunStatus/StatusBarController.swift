@@ -93,7 +93,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         )
 
         let controller = NSHostingController(rootView: view)
-        controller.preferredContentSize = NSSize(width: 340, height: 438)
+        controller.preferredContentSize = NSSize(width: 380, height: 520)
         return controller
     }
 

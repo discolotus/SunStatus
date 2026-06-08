@@ -168,12 +168,13 @@ struct SunArcPoint {
 
 ### 6. 3D Map and Sun Path
 
-- Add a MapKit-based satellite view.
-- Center on the user's current location by default.
-- Allow pan, zoom, pitch, and location selection.
-- Overlay the sun path in 3D space.
-- Show current sun vector and approximate shadow direction.
-- Add a time scrubber for previewing future shadow angles.
+- [ ] Add a MapKit-based satellite view.
+- [ ] Center on the user's current location by default.
+- [x] Add a native SceneKit 3D sun-angle prototype in the popover.
+- [x] Allow orbit/zoom inspection in the SceneKit prototype.
+- [x] Overlay the mock sun path in 3D space.
+- [x] Show current sun vector and approximate shadow direction.
+- [x] Add a time scrubber for previewing future shadow angles.
 
 ### 7. Preferences and Reliability
 

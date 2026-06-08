@@ -9,22 +9,38 @@ struct SunStatusPopoverView: View {
         NSApp.terminate(nil)
     }
 
+    @State private var selectedPanel: PopoverPanel = .arc
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
 
-            SolarArcView(status: status)
+            Picker("Panel", selection: $selectedPanel) {
+                ForEach(PopoverPanel.allCases, id: \.self) { panel in
+                    Label(panel.title, systemImage: panel.symbolName)
+                        .tag(panel)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
 
-            metrics
+            switch selectedPanel {
+            case .arc:
+                SolarArcView(status: status)
 
-            modifierStrip
+                metrics
+
+                modifierStrip
+            case .sunPath3D:
+                SunPath3DPanel(status: status)
+            }
 
             Divider()
 
             footer
         }
         .padding(14)
-        .frame(width: 340)
+        .frame(width: 380)
         .fixedSize(horizontal: false, vertical: true)
         .background(.regularMaterial)
     }
@@ -166,6 +182,25 @@ struct SunStatusPopoverView: View {
         }
 
         return "\(max(minutes, 1))m"
+    }
+}
+
+private enum PopoverPanel: CaseIterable {
+    case arc
+    case sunPath3D
+
+    var title: String {
+        switch self {
+        case .arc: "Arc"
+        case .sunPath3D: "3D"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .arc: "sun.horizon"
+        case .sunPath3D: "cube.transparent"
+        }
     }
 }
 
