@@ -16,7 +16,7 @@ The current Homebrew build includes the mock daylight prototype: a menu bar stat
 Build a release archive locally:
 
 ```sh
-scripts/build-release.sh 0.2.0
+scripts/build-release.sh 0.2.1
 ```
 
 The script outputs `.build/release/SunStatus.zip` and prints the SHA-256 checksum used by the Homebrew cask.

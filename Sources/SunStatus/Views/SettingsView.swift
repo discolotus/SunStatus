@@ -38,6 +38,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 420)
+        .frame(width: 420, height: 280)
     }
 }
