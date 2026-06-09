@@ -1,16 +1,19 @@
 import Foundation
 
-/// A `DaylightProviding` implementation backed by real astronomy.
+/// A `DaylightProviding` implementation backed by real astronomy and optional live weather.
 ///
-/// This replaces the sine-curve `MockDaylightProvider` for production use: every
-/// elevation, azimuth, sunrise, solar noon, and sunset value comes from
-/// `SolarPositionCalculator`, so the 2D arc and 3D sun-path overlays are now
-/// physically trustworthy. Brightness is still a clear-sky heuristic derived from the
-/// real solar elevation, since weather data is a separate roadmap milestone.
+/// Solar position data (elevation, azimuth, sunrise, sunset, solar noon) comes from
+/// `SolarPositionCalculator`. When a `WeatherSnapshot` is supplied, its cloud cover,
+/// UV index, and visibility values replace the clear-sky heuristics — making the
+/// brightness readouts reflect actual atmospheric conditions.
 public struct SolarDaylightProvider: DaylightProviding {
     public var locationName: String
     public var coordinate: Coordinate
     public var timezone: TimeZone
+
+    /// Live weather to blend into the brightness snapshot. When nil, brightness falls
+    /// back to a clear-sky estimate derived from solar elevation alone.
+    public var weather: WeatherSnapshot?
 
     /// Number of sampled points along the daily sun path used to build the 3D arc.
     private let arcSampleCount: Int
@@ -19,11 +22,13 @@ public struct SolarDaylightProvider: DaylightProviding {
         locationName: String = "San Francisco",
         coordinate: Coordinate = Coordinate(latitude: 37.7749, longitude: -122.4194),
         timezone: TimeZone = TimeZone(identifier: "America/Los_Angeles") ?? .current,
+        weather: WeatherSnapshot? = nil,
         arcSampleCount: Int = 48
     ) {
         self.locationName = locationName
         self.coordinate = coordinate
         self.timezone = timezone
+        self.weather = weather
         self.arcSampleCount = max(arcSampleCount, 2)
     }
 
@@ -43,14 +48,18 @@ public struct SolarDaylightProvider: DaylightProviding {
             daylightProgress: progress
         )
 
+        let cloudCover = weather?.cloudCover
+        let uvIndex = weather?.uvIndex ?? clearSkyUVIndex(elevationDegrees: position.elevationDegrees)
+        let score = brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover)
+
         let brightness = BrightnessSnapshot(
             date: date,
-            score: brightnessScore(elevationDegrees: position.elevationDegrees),
-            classification: brightnessClassification(elevationDegrees: position.elevationDegrees),
-            cloudCover: nil,
-            uvIndex: clearSkyUVIndex(elevationDegrees: position.elevationDegrees),
-            visibilityMeters: nil,
-            modifiers: modifiers(elevationDegrees: position.elevationDegrees)
+            score: score,
+            classification: brightnessClassification(score: score),
+            cloudCover: cloudCover,
+            uvIndex: uvIndex,
+            visibilityMeters: weather?.visibilityMeters,
+            modifiers: modifiers(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover)
         )
 
         return DaylightStatus(
@@ -105,10 +114,12 @@ public struct SolarDaylightProvider: DaylightProviding {
                 progress: ratio,
                 elevationDegrees: position.elevationDegrees,
                 azimuthDegrees: position.azimuthDegrees,
-                brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees)
+                brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover)
             )
         }
     }
+
+    private var cloudCover: Double? { weather?.cloudCover }
 
     private func daylightSpan(for date: Date, events: SolarDayEvents) -> (start: Date, end: Date) {
         if let sunrise = events.sunrise, let sunset = events.sunset, sunset > sunrise {
@@ -123,24 +134,34 @@ public struct SolarDaylightProvider: DaylightProviding {
         return (start, end)
     }
 
-    // MARK: - Brightness heuristics (clear-sky, elevation-driven)
+    // MARK: - Brightness heuristics
 
-    private func brightnessScore(elevationDegrees: Double) -> Double {
+    /// Base clear-sky brightness from solar elevation, attenuated by cloud cover when available.
+    private func brightnessScore(elevationDegrees: Double, cloudCover: Double?) -> Double {
+        let clearSky: Double
+
         if elevationDegrees <= -6 {
-            return 0.05
+            clearSky = 0.05
+        } else if elevationDegrees <= 0 {
+            // Civil twilight: ramp from 0.05 to 0.18.
+            clearSky = 0.05 + (elevationDegrees + 6) / 6 * 0.13
+        } else {
+            let daylight = sin(elevationDegrees * .pi / 180)
+            clearSky = min(max(0.18 + daylight * 0.78, 0), 1)
         }
 
-        if elevationDegrees <= 0 {
-            // Civil twilight: ramp from night (0.05) to horizon (0.18).
-            return 0.05 + (elevationDegrees + 6) / 6 * 0.13
+        guard let cloudCover else {
+            return clearSky
         }
 
-        let daylight = sin(elevationDegrees * .pi / 180)
-        return min(max(0.18 + daylight * 0.78, 0), 1)
+        // Overcast sky transmits roughly 20% of clear-sky light at full cover.
+        // Linear blend between full-sun and overcast floor.
+        let attenuated = clearSky * (1 - cloudCover * 0.80)
+        return min(max(attenuated, 0.05), 1)
     }
 
-    private func brightnessClassification(elevationDegrees: Double) -> BrightnessClassification {
-        switch brightnessScore(elevationDegrees: elevationDegrees) {
+    private func brightnessClassification(score: Double) -> BrightnessClassification {
+        switch score {
         case ..<0.18:
             return .dark
         case 0.18..<0.38:
@@ -154,25 +175,32 @@ public struct SolarDaylightProvider: DaylightProviding {
         }
     }
 
-    private func modifiers(elevationDegrees: Double) -> [BrightnessModifier] {
+    private func modifiers(elevationDegrees: Double, cloudCover: Double?) -> [BrightnessModifier] {
+        var result: [BrightnessModifier] = []
+
         if elevationDegrees <= 0 {
-            return [.lowSun]
+            result.append(.lowSun)
+        } else if elevationDegrees < 8 {
+            result.append(.lowSun)
+            result.append(.goldenLight)
+        } else {
+            result.append(.highSun)
         }
 
-        if elevationDegrees < 8 {
-            return [.lowSun, .goldenLight]
+        if let cloudCover {
+            if cloudCover > 0.05 {
+                result.append(.lightClouds)
+            } else {
+                result.append(.clearVisibility)
+            }
+        } else if elevationDegrees >= 45 {
+            result.append(.clearVisibility)
         }
 
-        if elevationDegrees < 45 {
-            return [.highSun]
-        }
-
-        return [.highSun, .clearVisibility]
+        return result
     }
 
-    /// A clear-sky UV index estimate from solar elevation. This is genuinely derivable
-    /// from the sun's altitude (it scales with the cosine of the zenith angle); it does
-    /// not account for clouds, ozone, or altitude.
+    /// A clear-sky UV estimate used when live weather doesn't supply a UV value.
     private func clearSkyUVIndex(elevationDegrees: Double) -> Int? {
         guard elevationDegrees > 0 else {
             return nil
