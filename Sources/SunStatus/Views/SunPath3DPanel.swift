@@ -5,7 +5,9 @@ struct SunPath3DPanel: View {
     let status: DaylightStatus
     var mapHeight: CGFloat = 210
     var showsExpandButton = true
+    var mapMode: SunMapKitViewMode = .compact
     var onExpandMap: () -> Void = {}
+    var onRecenterToUserLocation: (Coordinate) -> Void = { _ in }
 
     @State private var previewProgress = 0.5
     @State private var isPlayingDayPath = false
@@ -29,7 +31,9 @@ struct SunPath3DPanel: View {
                     centerCoordinate: status.solar.location,
                     pathSamples: pathSamples,
                     selectedSample: selectedSample,
-                    recenterRequestID: mapKitRecenterRequestID
+                    mode: mapMode,
+                    recenterRequestID: mapKitRecenterRequestID,
+                    onRecenterToUserLocation: onRecenterToUserLocation
                 )
 
                 VStack {

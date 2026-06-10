@@ -29,11 +29,21 @@ public struct WeatherSnapshot: Equatable, Sendable {
             return cloudCover
         }
 
-        return cloudCoverForecast
-            .min { lhs, rhs in
-                abs(lhs.date.timeIntervalSince(date)) < abs(rhs.date.timeIntervalSince(date))
-            }?
-            .cloudCover
+        if date <= cloudCoverForecast[0].date {
+            return cloudCoverForecast[0].cloudCover
+        }
+
+        for pair in zip(cloudCoverForecast, cloudCoverForecast.dropFirst()) where date <= pair.1.date {
+            let duration = pair.1.date.timeIntervalSince(pair.0.date)
+            guard duration > 0 else {
+                return pair.1.cloudCover
+            }
+
+            let progress = min(max(date.timeIntervalSince(pair.0.date) / duration, 0), 1)
+            return pair.0.cloudCover + (pair.1.cloudCover - pair.0.cloudCover) * progress
+        }
+
+        return cloudCoverForecast.last?.cloudCover
     }
 }
 

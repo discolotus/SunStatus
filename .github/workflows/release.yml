@@ -69,7 +69,7 @@ jobs:
           set -euo pipefail
 
           awk -v version="$VERSION" '
-            $0 == "## [" version "]" { in_section=1; next }
+            $0 ~ "^## \\[" version "\\]([[:space:]]|$)" { in_section=1; next }
             in_section && /^## \[/ { exit }
             in_section { print }
           ' CHANGELOG.md > /tmp/release-notes.md
@@ -93,5 +93,6 @@ jobs:
 
           gh release create "$TAG" \
             .build/release/SunStatus.zip \
+            .build/release/SunStatus.dmg \
             --title "SunStatus $TAG" \
             --notes-file /tmp/release-notes.md

@@ -69,7 +69,7 @@ final class WeatherSnapshotTests: XCTestCase {
         XCTAssertEqual(snapshot.cloudCoverForecast.map(\.cloudCover), [0.05, 0.6, 0.95])
     }
 
-    func testNearestHourlyCloudCoverPreferredOverCurrentCloudCover() throws {
+    func testInterpolatedHourlyCloudCoverPreferredOverCurrentCloudCover() throws {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
@@ -85,7 +85,11 @@ final class WeatherSnapshotTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(snapshot.cloudCover(at: formatter.date(from: "2026-06-09T15:40")!), 0.8)
+        XCTAssertEqual(
+            try XCTUnwrap(snapshot.cloudCover(at: formatter.date(from: "2026-06-09T15:40")!)),
+            0.5667,
+            accuracy: 0.001
+        )
     }
 
     func testNilFieldsOnMissingCurrentKeys() throws {

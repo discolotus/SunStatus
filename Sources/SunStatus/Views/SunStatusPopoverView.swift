@@ -9,6 +9,7 @@ struct SunStatusPopoverView: View {
     var onOpenSettings: () -> Void = {}
     var onOpenWindow: () -> Void = {}
     var onExpandMap: () -> Void = {}
+    var onRecenterToUserLocation: (Coordinate) -> Void = { _ in }
     var onClosePinned: () -> Void = {}
     var onQuit: () -> Void = {
         NSApp.terminate(nil)
@@ -40,7 +41,11 @@ struct SunStatusPopoverView: View {
 
                 modifierStrip(arcPreviewModifiers)
             case .sunPath3D:
-                SunPath3DPanel(status: status, onExpandMap: onExpandMap)
+                SunPath3DPanel(
+                    status: status,
+                    onExpandMap: onExpandMap,
+                    onRecenterToUserLocation: onRecenterToUserLocation
+                )
             }
 
             Divider()

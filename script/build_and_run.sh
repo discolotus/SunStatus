@@ -7,6 +7,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 BUNDLE_PATH="$DIST_DIR/$APP_NAME.app"
 EXECUTABLE_PATH="$BUNDLE_PATH/Contents/MacOS/$APP_NAME"
+RESOURCES_PATH="$BUNDLE_PATH/Contents/Resources"
+ICON_SOURCE="$ROOT_DIR/Assets/AppIcon.png"
+ICONSET_PATH="$DIST_DIR/AppIcon.iconset"
 VERIFY=false
 APP_ARGS=()
 
@@ -28,10 +31,23 @@ cd "$ROOT_DIR"
 swift build
 
 rm -rf "$BUNDLE_PATH"
-mkdir -p "$BUNDLE_PATH/Contents/MacOS"
+rm -rf "$ICONSET_PATH"
+mkdir -p "$BUNDLE_PATH/Contents/MacOS" "$RESOURCES_PATH" "$ICONSET_PATH"
 
 cp ".build/debug/$APP_NAME" "$EXECUTABLE_PATH"
 chmod +x "$EXECUTABLE_PATH"
+
+sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_16x16.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_16x16@2x.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_32x32.png" >/dev/null
+sips -z 64 64 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_32x32@2x.png" >/dev/null
+sips -z 128 128 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_128x128.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_128x128@2x.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_256x256.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_256x256@2x.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_512x512.png" >/dev/null
+sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_512x512@2x.png" >/dev/null
+python3 "$ROOT_DIR/scripts/make-icns.py" "$ICONSET_PATH" "$RESOURCES_PATH/AppIcon.icns"
 
 cat > "$BUNDLE_PATH/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -46,10 +62,16 @@ cat > "$BUNDLE_PATH/Contents/Info.plist" <<PLIST
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>LSMinimumSystemVersion</key>
   <string>14.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSLocationUsageDescription</key>
+  <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
   <key>NSLocationWhenInUseUsageDescription</key>
-  <string>SunStatus uses your location to center the sun map and calculate local sun position.</string>
+  <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
 </dict>

@@ -64,8 +64,8 @@ final class SolarDaylightProviderWeatherTests: XCTestCase {
             abs(lhs.date.timeIntervalSince(morning)) < abs(rhs.date.timeIntervalSince(morning))
         })
 
-        XCTAssertEqual(try XCTUnwrap(cloudyPoint.cloudCover), 0.85, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(clearPoint.cloudCover), 0.05, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(cloudyPoint.cloudCover), 0.85, accuracy: 0.02)
+        XCTAssertEqual(try XCTUnwrap(clearPoint.cloudCover), 0.05, accuracy: 0.02)
     }
 
     func testOvercastReducesBrightnessScore() {

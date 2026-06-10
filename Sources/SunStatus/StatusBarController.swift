@@ -1,4 +1,5 @@
 import AppKit
+import CoreLocation
 import SwiftUI
 import SunStatusCore
 
@@ -10,6 +11,11 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private var pinnedWindow: NSWindow?
     private var expandedMapWindow: NSWindow?
     private var timer: Timer?
+    private let selectedLocationWeatherService = WeatherService()
+    private var selectedLocationCoordinate: Coordinate?
+    private var selectedLocationWeatherCoordinate: Coordinate?
+    private var selectedLocationWeather: WeatherSnapshot?
+    private var selectedLocationWeatherTask: Task<Void, Never>?
 
     init(provider: DaylightProviding) {
         self.provider = provider
@@ -68,7 +74,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     private func refresh() {
-        let status = provider.status(at: .now)
+        let status = currentStatus()
 
         if let button = statusItem.button {
             button.title = menuTitle(for: status)
@@ -100,7 +106,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             return
         }
 
-        let status = provider.status(at: .now)
+        let status = currentStatus()
         let contentSize = preferredPopoverContentSize()
         popover.contentSize = contentSize
         popover.contentViewController = makePopoverController(for: status, isPinned: false, contentSize: contentSize)
@@ -109,7 +115,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     func showPinnedWindow() {
-        let status = provider.status(at: .now)
+        let status = currentStatus()
 
         if pinnedWindow == nil {
             let window = NSWindow(
@@ -123,6 +129,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             window.isReleasedWhenClosed = false
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             window.delegate = self
+            configureCenteredTitle(for: window)
             window.center()
             pinnedWindow = window
         }
@@ -163,6 +170,9 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             onExpandMap: { [weak self] in
                 self?.showExpandedMapWindow()
             },
+            onRecenterToUserLocation: { [weak self] coordinate in
+                self?.selectCurrentLocation(coordinate)
+            },
             onClosePinned: { [weak self] in
                 self?.closePinnedWindow()
             },
@@ -189,8 +199,8 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             onExpandMap: { [weak self] in
                 self?.showExpandedMapWindow()
             },
-            onClose: { [weak self] in
-                self?.closePinnedWindow()
+            onRecenterToUserLocation: { [weak self] coordinate in
+                self?.selectCurrentLocation(coordinate)
             }
         )
 
@@ -200,7 +210,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     func showExpandedMapWindow() {
-        let status = provider.status(at: .now)
+        let status = currentStatus()
 
         if expandedMapWindow == nil {
             let window = NSWindow(
@@ -209,11 +219,12 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "SunStatus Map"
+            window.title = "SunStatus"
             window.isReleasedWhenClosed = false
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             window.minSize = NSSize(width: 760, height: 700)
             window.delegate = self
+            configureCenteredTitle(for: window)
             window.center()
             expandedMapWindow = window
         }
@@ -225,9 +236,120 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     private func makeExpandedMapWindowController(for status: DaylightStatus) -> NSViewController {
-        let controller = NSHostingController(rootView: ExpandedSunMapWindowView(status: status))
+        let controller = NSHostingController(
+            rootView: ExpandedSunMapWindowView(
+                status: status,
+                onRecenterToUserLocation: { [weak self] coordinate in
+                    self?.selectCurrentLocation(coordinate)
+                }
+            )
+        )
         controller.preferredContentSize = NSSize(width: 980, height: 820)
         return controller
+    }
+
+    private func currentStatus(at date: Date = .now) -> DaylightStatus {
+        guard let selectedLocationCoordinate else {
+            return provider.status(at: date)
+        }
+
+        return SolarDaylightProvider(
+            locationName: "Current Location",
+            coordinate: selectedLocationCoordinate,
+            timezone: .current,
+            weather: selectedLocationWeather
+        )
+        .status(at: date)
+    }
+
+    private func selectCurrentLocation(_ coordinate: Coordinate) {
+        let didMove = selectedLocationCoordinate.map { distance(from: $0, to: coordinate) > 5 } ?? true
+
+        if didMove {
+            selectedLocationCoordinate = coordinate
+
+            if shouldClearSelectedLocationWeather(for: coordinate) {
+                selectedLocationWeather = nil
+            }
+
+            refresh()
+        }
+
+        refreshSelectedLocationWeather(for: coordinate)
+    }
+
+    private func shouldClearSelectedLocationWeather(for coordinate: Coordinate) -> Bool {
+        guard let selectedLocationWeatherCoordinate else {
+            return selectedLocationWeather != nil
+        }
+
+        return distance(from: selectedLocationWeatherCoordinate, to: coordinate) > 250
+    }
+
+    private func refreshSelectedLocationWeather(for coordinate: Coordinate) {
+        let needsFreshCoordinate = selectedLocationWeatherCoordinate
+            .map { distance(from: $0, to: coordinate) > 250 } ?? true
+
+        guard needsFreshCoordinate || selectedLocationWeather == nil else {
+            return
+        }
+
+        selectedLocationWeatherCoordinate = coordinate
+        selectedLocationWeatherTask?.cancel()
+
+        let weatherService = selectedLocationWeatherService
+        selectedLocationWeatherTask = Task { [weak self, weatherService] in
+            let snapshot = await weatherService.weather(for: coordinate)
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run { [weak self] in
+                guard let self,
+                      let selectedLocationCoordinate = self.selectedLocationCoordinate,
+                      self.distance(from: selectedLocationCoordinate, to: coordinate) <= 250 else {
+                    return
+                }
+
+                self.selectedLocationWeather = snapshot
+                self.refresh()
+            }
+        }
+    }
+
+    private func distance(from lhs: Coordinate, to rhs: Coordinate) -> CLLocationDistance {
+        CLLocation(latitude: lhs.latitude, longitude: lhs.longitude)
+            .distance(from: CLLocation(latitude: rhs.latitude, longitude: rhs.longitude))
+    }
+
+    private func configureCenteredTitle(for window: NSWindow) {
+        window.titleVisibility = .hidden
+
+        let titleLabel = NSTextField(labelWithString: "SunStatus")
+        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.alignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let titlebarView = window.standardWindowButton(.closeButton)?.superview
+            ?? window.contentView?.superview
+        guard let titlebarView else {
+            return
+        }
+
+        titlebarView.addSubview(titleLabel)
+        if let closeButton = window.standardWindowButton(.closeButton) {
+            NSLayoutConstraint.activate([
+                titleLabel.centerXAnchor.constraint(equalTo: titlebarView.centerXAnchor),
+                titleLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor)
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                titleLabel.centerXAnchor.constraint(equalTo: titlebarView.centerXAnchor),
+                titleLabel.topAnchor.constraint(equalTo: titlebarView.topAnchor, constant: 10)
+            ])
+        }
     }
 
     private func menuTitle(for status: DaylightStatus) -> String {

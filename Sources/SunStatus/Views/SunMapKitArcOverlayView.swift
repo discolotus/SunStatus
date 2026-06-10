@@ -3,12 +3,11 @@ import MapKit
 import SunStatusCore
 
 final class SunMapKitArcOverlayView: NSView {
-    private static let pathRadiusMeters = 275.0
-
     weak var mapView: MKMapView?
     private var center: CLLocationCoordinate2D?
     private var pathSamples: [SunPathSample3D] = []
     private var selectedSample: SunPathSample3D?
+    private var pathRadiusMeters = 275.0
 
     override var isFlipped: Bool {
         true
@@ -22,12 +21,14 @@ final class SunMapKitArcOverlayView: NSView {
         mapView: MKMapView,
         center: CLLocationCoordinate2D,
         pathSamples: [SunPathSample3D],
-        selectedSample: SunPathSample3D
+        selectedSample: SunPathSample3D,
+        pathRadiusMeters: Double
     ) {
         self.mapView = mapView
         self.center = center
         self.pathSamples = pathSamples
         self.selectedSample = selectedSample
+        self.pathRadiusMeters = pathRadiusMeters
         needsDisplay = true
     }
 
@@ -65,18 +66,36 @@ final class SunMapKitArcOverlayView: NSView {
 
         let direction = sample.direction
         let worldPoint = SunVector3(
-            x: direction.x * Self.pathRadiusMeters,
-            y: max(direction.y * Self.pathRadiusMeters, 4),
-            z: direction.z * Self.pathRadiusMeters
+            x: direction.x * pathRadiusMeters,
+            y: max(direction.y * pathRadiusMeters, 4),
+            z: direction.z * pathRadiusMeters
         )
         let camera = SunArcCamera(
             headingDegrees: mapView.camera.heading,
             pitchDegrees: mapView.camera.pitch,
             centerDistanceMeters: mapView.camera.centerCoordinateDistance
         )
-        guard let groundPoint = SunArcProjection.groundIntersection(of: worldPoint, camera: camera) else {
+        let cameraCenterOffset = SunMapKitGeometry.mercatorOffset(
+            from: center,
+            to: mapView.camera.centerCoordinate
+        )
+        let pointRelativeToCameraCenter = SunVector3(
+            x: worldPoint.x - cameraCenterOffset.eastMeters,
+            y: worldPoint.y,
+            z: worldPoint.z - cameraCenterOffset.northMeters
+        )
+
+        guard let groundPointRelativeToCameraCenter = SunArcProjection.groundIntersection(
+            of: pointRelativeToCameraCenter,
+            camera: camera
+        ) else {
             return nil
         }
+        let groundPoint = SunVector3(
+            x: groundPointRelativeToCameraCenter.x + cameraCenterOffset.eastMeters,
+            y: 0,
+            z: groundPointRelativeToCameraCenter.z + cameraCenterOffset.northMeters
+        )
 
         let coordinate = SunMapKitGeometry.coordinate(
             from: center,
