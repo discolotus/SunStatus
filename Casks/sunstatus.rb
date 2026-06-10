@@ -1,6 +1,6 @@
 cask "sunstatus" do
   version "0.4.0"
-  sha256 "4576ac7ff4175e8fb028b1647e23f5af0fe0a06b1e7370a3fa610dd9b4b880bb"
+  sha256 "d73dea7c9f0b483d28191ea7f9a4d4276004de96060086a8ce5e5f3043f6fd80"
 
   url "https://github.com/discolotus/SunStatus/releases/download/v#{version}/SunStatus.dmg"
   name "SunStatus"
