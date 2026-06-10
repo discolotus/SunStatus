@@ -1,13 +1,20 @@
-import AppKit
-import SceneKit
 import SwiftUI
 import SunStatusCore
 
 struct SunPath3DPanel: View {
     let status: DaylightStatus
+    var mapHeight: CGFloat = 210
+    var showsExpandButton = true
+    var mapMode: SunMapKitViewMode = .compact
+    var onExpandMap: () -> Void = {}
+    var onRecenterToUserLocation: (Coordinate) -> Void = { _ in }
 
     @State private var previewProgress = 0.5
-    @State private var displayMode: SunPath3DDisplayMode = .map
+    @State private var isPlayingDayPath = false
+    @State private var mapKitRecenterRequestID = 0
+
+    private let playbackTimer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
+    private let playbackDuration: TimeInterval = 10
 
     private var pathSamples: [SunPathSample3D] {
         SunPathGeometry.samples(from: status.arcPoints)
@@ -19,45 +26,67 @@ struct SunPath3DPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("3D view", selection: $displayMode) {
-                ForEach(SunPath3DDisplayMode.allCases, id: \.self) { mode in
-                    Label(mode.title, systemImage: mode.symbolName)
-                        .tag(mode)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-
             ZStack {
-                switch displayMode {
-                case .map:
-                    SunMap3DView(
-                        centerCoordinate: status.solar.location,
-                        pathSamples: pathSamples,
-                        selectedSample: selectedSample
-                    )
-                case .model:
-                    SunPath3DSceneView(pathSamples: pathSamples, selectedSample: selectedSample)
+                SunMapKitView(
+                    centerCoordinate: status.solar.location,
+                    pathSamples: pathSamples,
+                    selectedSample: selectedSample,
+                    mode: mapMode,
+                    recenterRequestID: mapKitRecenterRequestID,
+                    onRecenterToUserLocation: onRecenterToUserLocation
+                )
+
+                VStack {
+                    HStack(alignment: .top) {
+                        if showsExpandButton {
+                            MapExpandButton(action: onExpandMap)
+                        }
+
+                        Spacer()
+
+                        MapRecenterButton {
+                            mapKitRecenterRequestID += 1
+                        }
+                    }
+
+                    Spacer()
                 }
+                .padding(8)
             }
-            .frame(height: 210)
+            .frame(height: mapHeight)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             angleReadouts
 
             VStack(spacing: 4) {
-                Slider(value: $previewProgress, in: 0...1) {
-                    Text("Preview time")
+                HStack(spacing: 8) {
+                    Button {
+                        toggleDayPathPlayback()
+                    } label: {
+                        Image(systemName: isPlayingDayPath ? "pause.fill" : "play.fill")
+                            .font(.system(size: 12, weight: .bold))
+                            .frame(width: 26, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.primary)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .accessibilityLabel(isPlayingDayPath ? "Pause sun path animation" : "Play sun path animation")
+                    .help(isPlayingDayPath ? "Pause sun path animation" : "Play sun path animation")
+
+                    Slider(value: $previewProgress, in: 0...1) {
+                        Text("Preview time")
+                    }
                 }
 
                 HStack {
-                    Text(timeText(status.solar.sunrise))
+                    Text(timeText(pathSamples.first?.date ?? status.solar.sunrise))
                     Spacer()
                     Text(timeText(selectedSample.date))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(timeText(status.solar.sunset))
+                    Text(timeText(pathSamples.last?.date ?? status.solar.sunset))
                 }
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -67,7 +96,14 @@ struct SunPath3DPanel: View {
             previewProgress = status.solar.daylightProgress ?? 0.5
         }
         .onChange(of: status.solar.date) { _, _ in
+            guard !isPlayingDayPath else {
+                return
+            }
+
             previewProgress = status.solar.daylightProgress ?? previewProgress
+        }
+        .onReceive(playbackTimer) { _ in
+            advanceDayPathPlayback()
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilitySummary)
@@ -96,7 +132,30 @@ struct SunPath3DPanel: View {
     }
 
     private var accessibilitySummary: String {
-        "\(displayMode.accessibilityName), elevation \(degreesText(selectedSample.elevationDegrees)), azimuth \(bearingText(selectedSample.azimuthDegrees)), shadow \(shadowText)"
+        "Native MapKit sun map, elevation \(degreesText(selectedSample.elevationDegrees)), azimuth \(bearingText(selectedSample.azimuthDegrees)), shadow \(shadowText)"
+    }
+
+    private func toggleDayPathPlayback() {
+        if isPlayingDayPath {
+            isPlayingDayPath = false
+        } else {
+            previewProgress = 0
+            isPlayingDayPath = true
+        }
+    }
+
+    private func advanceDayPathPlayback() {
+        guard isPlayingDayPath else {
+            return
+        }
+
+        let nextProgress = previewProgress + ((1.0 / 30.0) / playbackDuration)
+        if nextProgress >= 1 {
+            previewProgress = 1
+            isPlayingDayPath = false
+        } else {
+            previewProgress = nextProgress
+        }
     }
 
     private func degreesText(_ degrees: Double) -> String {
@@ -132,32 +191,6 @@ struct SunPath3DPanel: View {
     }
 }
 
-private enum SunPath3DDisplayMode: CaseIterable {
-    case map
-    case model
-
-    var title: String {
-        switch self {
-        case .map: "Map"
-        case .model: "Model"
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .map: "map"
-        case .model: "cube.transparent"
-        }
-    }
-
-    var accessibilityName: String {
-        switch self {
-        case .map: "3D satellite sun map"
-        case .model: "3D sun path model"
-        }
-    }
-}
-
 private struct AngleTile: View {
     let title: String
     let value: String
@@ -190,265 +223,40 @@ private struct AngleTile: View {
     }
 }
 
-private struct SunPath3DSceneView: NSViewRepresentable {
-    let pathSamples: [SunPathSample3D]
-    let selectedSample: SunPathSample3D
+private struct MapExpandButton: View {
+    let action: () -> Void
 
-    func makeNSView(context: Context) -> SCNView {
-        let view = SCNView()
-        view.allowsCameraControl = true
-        view.autoenablesDefaultLighting = false
-        view.backgroundColor = .clear
-        view.antialiasingMode = .multisampling4X
-        view.rendersContinuously = false
-        return view
-    }
-
-    func updateNSView(_ view: SCNView, context: Context) {
-        view.scene = SunPathSceneFactory.scene(pathSamples: pathSamples, selectedSample: selectedSample)
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: .black.opacity(0.24), radius: 5, y: 2)
+        .accessibilityLabel("Expand map")
+        .help("Expand map")
     }
 }
 
-private enum SunPathSceneFactory {
-    static func scene(pathSamples: [SunPathSample3D], selectedSample: SunPathSample3D) -> SCNScene {
-        let scene = SCNScene()
-        scene.background.contents = NSColor.clear
+private struct MapRecenterButton: View {
+    let action: () -> Void
 
-        scene.rootNode.addChildNode(cameraNode())
-        scene.rootNode.addChildNode(ambientLightNode())
-        scene.rootNode.addChildNode(keyLightNode())
-        scene.rootNode.addChildNode(gridNode())
-        scene.rootNode.addChildNode(horizonNode())
-        scene.rootNode.addChildNode(cardinalLabelsNode())
-        scene.rootNode.addChildNode(pathNode(samples: pathSamples))
-        scene.rootNode.addChildNode(pathMarkersNode(samples: pathSamples))
-        scene.rootNode.addChildNode(currentSunNode(sample: selectedSample))
-        scene.rootNode.addChildNode(currentVectorNode(sample: selectedSample))
-        scene.rootNode.addChildNode(shadowNode(sample: selectedSample))
-        scene.rootNode.addChildNode(referencePostNode())
-
-        return scene
-    }
-
-    private static func cameraNode() -> SCNNode {
-        let camera = SCNCamera()
-        camera.usesOrthographicProjection = true
-        camera.orthographicScale = 2.05
-        camera.zNear = 0.1
-        camera.zFar = 100
-
-        let node = SCNNode()
-        node.camera = camera
-        node.position = SCNVector3(0, 2.45, 3.75)
-        node.look(at: SCNVector3(0, 0.35, 0))
-        return node
-    }
-
-    private static func ambientLightNode() -> SCNNode {
-        let light = SCNLight()
-        light.type = .ambient
-        light.color = NSColor.white.withAlphaComponent(0.45)
-
-        let node = SCNNode()
-        node.light = light
-        return node
-    }
-
-    private static func keyLightNode() -> SCNNode {
-        let light = SCNLight()
-        light.type = .directional
-        light.color = NSColor.white
-        light.intensity = 700
-
-        let node = SCNNode()
-        node.light = light
-        node.eulerAngles = SCNVector3(-0.85, 0.35, 0)
-        return node
-    }
-
-    private static func gridNode() -> SCNNode {
-        var points: [SCNVector3] = []
-        let extent: Float = 1.82
-        let step: Float = 0.45
-        var value = -extent
-
-        while value <= extent + 0.001 {
-            points.append(SCNVector3(-extent, 0.002, value))
-            points.append(SCNVector3(extent, 0.002, value))
-            points.append(SCNVector3(value, 0.002, -extent))
-            points.append(SCNVector3(value, 0.002, extent))
-            value += step
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "location.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
         }
-
-        return lineNode(points: points, color: NSColor.separatorColor.withAlphaComponent(0.28))
-    }
-
-    private static func horizonNode() -> SCNNode {
-        let segments = 96
-        let radius: Float = 1.72
-        let points = (0...segments).map { index in
-            let angle = Float(index) / Float(segments) * 2 * .pi
-            return SCNVector3(cos(angle) * radius, 0.01, sin(angle) * radius)
-        }
-
-        return connectedLineNode(points: points, color: NSColor.secondaryLabelColor.withAlphaComponent(0.42))
-    }
-
-    private static func cardinalLabelsNode() -> SCNNode {
-        let parent = SCNNode()
-        let radius: Float = 1.92
-        let labels: [(String, SCNVector3)] = [
-            ("N", SCNVector3(0, 0.08, -radius)),
-            ("E", SCNVector3(radius, 0.08, 0)),
-            ("S", SCNVector3(0, 0.08, radius)),
-            ("W", SCNVector3(-radius, 0.08, 0))
-        ]
-
-        for (label, position) in labels {
-            parent.addChildNode(cardinalLabelNode(label, position: position))
-        }
-
-        return parent
-    }
-
-    private static func cardinalLabelNode(_ label: String, position: SCNVector3) -> SCNNode {
-        let text = SCNText(string: label, extrusionDepth: 0)
-        text.font = NSFont.systemFont(ofSize: 15, weight: .semibold)
-        text.flatness = 0.2
-        text.materials = [lineMaterial(color: NSColor.secondaryLabelColor.withAlphaComponent(0.75))]
-
-        let node = SCNNode(geometry: text)
-        let (minimum, maximum) = text.boundingBox
-        node.pivot = SCNMatrix4MakeTranslation(
-            (minimum.x + maximum.x) / 2,
-            (minimum.y + maximum.y) / 2,
-            0
-        )
-        node.position = position
-        node.scale = SCNVector3(0.012, 0.012, 0.012)
-
-        let constraint = SCNBillboardConstraint()
-        constraint.freeAxes = .Y
-        node.constraints = [constraint]
-
-        return node
-    }
-
-    private static func pathNode(samples: [SunPathSample3D]) -> SCNNode {
-        let points = samples.map(scenePoint)
-        return connectedLineNode(points: points, color: NSColor.systemYellow.withAlphaComponent(0.9))
-    }
-
-    private static func pathMarkersNode(samples: [SunPathSample3D]) -> SCNNode {
-        let parent = SCNNode()
-        let sphere = SCNSphere(radius: 0.024)
-        let material = SCNMaterial()
-        material.diffuse.contents = NSColor.systemYellow.withAlphaComponent(0.95)
-        material.emission.contents = NSColor.systemYellow.withAlphaComponent(0.25)
-        sphere.materials = [material]
-
-        for sample in samples {
-            let node = SCNNode(geometry: sphere.copy() as? SCNGeometry)
-            node.position = scenePoint(for: sample)
-            parent.addChildNode(node)
-        }
-
-        return parent
-    }
-
-    private static func currentSunNode(sample: SunPathSample3D) -> SCNNode {
-        let sphere = SCNSphere(radius: 0.095)
-        let material = SCNMaterial()
-        material.diffuse.contents = NSColor.systemYellow
-        material.emission.contents = NSColor.systemOrange.withAlphaComponent(0.45)
-        sphere.materials = [material]
-
-        let node = SCNNode(geometry: sphere)
-        node.position = scenePoint(for: sample)
-        return node
-    }
-
-    private static func currentVectorNode(sample: SunPathSample3D) -> SCNNode {
-        connectedLineNode(
-            points: [SCNVector3(0, 0.04, 0), scenePoint(for: sample)],
-            color: NSColor.systemOrange.withAlphaComponent(0.85)
-        )
-    }
-
-    private static func shadowNode(sample: SunPathSample3D) -> SCNNode {
-        guard let shadowDirection = sample.shadowDirection else {
-            return SCNNode()
-        }
-
-        let elevationFactor = max(0, min(sample.elevationDegrees / 80, 1))
-        let length = Float(0.85 + ((1 - elevationFactor) * 1.25))
-        let end = SCNVector3(
-            Float(shadowDirection.x) * length,
-            0.018,
-            -Float(shadowDirection.z) * length
-        )
-
-        return connectedLineNode(
-            points: [SCNVector3(0, 0.018, 0), end],
-            color: NSColor.systemBlue.withAlphaComponent(0.84)
-        )
-    }
-
-    private static func referencePostNode() -> SCNNode {
-        let cylinder = SCNCylinder(radius: 0.035, height: 0.42)
-        let material = SCNMaterial()
-        material.diffuse.contents = NSColor.labelColor.withAlphaComponent(0.72)
-        cylinder.materials = [material]
-
-        let node = SCNNode(geometry: cylinder)
-        node.position = SCNVector3(0, 0.21, 0)
-        return node
-    }
-
-    private static func scenePoint(for sample: SunPathSample3D) -> SCNVector3 {
-        let direction = sample.direction
-        let radius = 1.42
-        let height = max(direction.y * 1.18, 0.025)
-
-        return SCNVector3(
-            Float(direction.x * radius),
-            Float(height),
-            Float(-direction.z * radius)
-        )
-    }
-
-    private static func lineNode(points: [SCNVector3], color: NSColor) -> SCNNode {
-        guard points.count >= 2 else {
-            return SCNNode()
-        }
-
-        let source = SCNGeometrySource(vertices: points)
-        let indices = Array(UInt32(0)..<UInt32(points.count))
-        let element = SCNGeometryElement(indices: indices, primitiveType: .line)
-        let geometry = SCNGeometry(sources: [source], elements: [element])
-        geometry.materials = [lineMaterial(color: color)]
-        return SCNNode(geometry: geometry)
-    }
-
-    private static func connectedLineNode(points: [SCNVector3], color: NSColor) -> SCNNode {
-        guard points.count >= 2 else {
-            return SCNNode()
-        }
-
-        var segmentPoints: [SCNVector3] = []
-        for (start, end) in zip(points, points.dropFirst()) {
-            segmentPoints.append(start)
-            segmentPoints.append(end)
-        }
-
-        return lineNode(points: segmentPoints, color: color)
-    }
-
-    private static func lineMaterial(color: NSColor) -> SCNMaterial {
-        let material = SCNMaterial()
-        material.diffuse.contents = color
-        material.emission.contents = color.withAlphaComponent(0.32)
-        material.lightingModel = .constant
-        return material
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: .black.opacity(0.24), radius: 5, y: 2)
+        .accessibilityLabel("Center map on current location")
+        .help("Center map on current location")
     }
 }

@@ -61,6 +61,27 @@ jobs:
         if: steps.version.outputs.publish == 'true'
         run: scripts/build-release.sh "${{ steps.version.outputs.version }}"
 
+      - name: Update Homebrew cask checksum
+        if: steps.version.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          dmg_sha="$(shasum -a 256 .build/release/SunStatus.dmg | awk '{ print $1 }')"
+          scripts/update-homebrew-cask.sh "$VERSION" "$dmg_sha"
+
+          if git diff --quiet -- Casks/sunstatus.rb; then
+            echo "Homebrew cask is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/sunstatus.rb
+          git commit -m "Update Homebrew cask for v$VERSION"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
       - name: Prepare release notes
         if: steps.version.outputs.publish == 'true'
         env:
@@ -69,7 +90,7 @@ jobs:
           set -euo pipefail
 
           awk -v version="$VERSION" '
-            $0 == "## [" version "]" { in_section=1; next }
+            $0 ~ "^## \\[" version "\\]([[:space:]]|$)" { in_section=1; next }
             in_section && /^## \[/ { exit }
             in_section { print }
           ' CHANGELOG.md > /tmp/release-notes.md
@@ -93,5 +114,7 @@ jobs:
 
           gh release create "$TAG" \
             .build/release/SunStatus.zip \
+            .build/release/SunStatus.dmg \
+            --target "$(git rev-parse HEAD)" \
             --title "SunStatus $TAG" \
             --notes-file /tmp/release-notes.md

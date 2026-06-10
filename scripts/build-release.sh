@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-0.3.0}"
+VERSION="${1:-0.4.0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="SunStatus"
@@ -14,6 +14,8 @@ SWIFTPM_BUILD_DIR="$BUILD_DIR/swiftpm"
 ICON_SOURCE="$ROOT_DIR/Assets/AppIcon.png"
 ICONSET_DIR="$BUILD_DIR/AppIcon.iconset"
 ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
+DMG_STAGING_DIR="$BUILD_DIR/dmg-staging"
+DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
 DEPLOYMENT_TARGET="14.0"
 
 rm -rf "$BUILD_DIR"
@@ -81,7 +83,58 @@ python3 "$ROOT_DIR/scripts/make-icns.py" "$ICONSET_DIR" "$RESOURCES_DIR/AppIcon.
 
 xattr -cr "$APP_DIR"
 codesign --force --sign - "$APP_DIR"
-ditto -c -k --keepParent "$APP_DIR" "$ZIP_PATH"
+xattr -cr "$APP_DIR"
+codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+COPYFILE_DISABLE=1 ditto -c -k --keepParent --norsrc "$APP_DIR" "$ZIP_PATH"
+xattr -cr "$APP_DIR"
+xattr -dr com.apple.FinderInfo "$APP_DIR" 2>/dev/null || true
+xattr -dr 'com.apple.fileprovider.fpfs#P' "$APP_DIR" 2>/dev/null || true
+
+mkdir -p "$DMG_STAGING_DIR"
+COPYFILE_DISABLE=1 ditto --norsrc "$APP_DIR" "$DMG_STAGING_DIR/$APP_NAME.app"
+xattr -cr "$DMG_STAGING_DIR/$APP_NAME.app"
+xattr -dr com.apple.FinderInfo "$DMG_STAGING_DIR/$APP_NAME.app" 2>/dev/null || true
+xattr -dr 'com.apple.fileprovider.fpfs#P' "$DMG_STAGING_DIR/$APP_NAME.app" 2>/dev/null || true
+codesign --verify --deep --strict --verbose=2 "$DMG_STAGING_DIR/$APP_NAME.app"
+ln -s /Applications "$DMG_STAGING_DIR/Applications"
+hdiutil create \
+    -volname "$APP_NAME" \
+    -srcfolder "$DMG_STAGING_DIR" \
+    -ov \
+    -format UDZO \
+    "$DMG_PATH"
+
+if unzip -Z1 "$ZIP_PATH" | grep -Eq '(^|/)\._'; then
+    echo "Release archive contains AppleDouble metadata files." >&2
+    exit 1
+fi
+
+VERIFY_DIR="$(mktemp -d)"
+trap 'rm -rf "$VERIFY_DIR"' EXIT
+unzip -q "$ZIP_PATH" -d "$VERIFY_DIR"
+codesign --verify --deep --strict --verbose=2 "$VERIFY_DIR/$APP_NAME.app"
+
+DMG_MOUNT_POINT="$VERIFY_DIR/dmg"
+mkdir -p "$DMG_MOUNT_POINT"
+hdiutil attach "$DMG_PATH" -mountpoint "$DMG_MOUNT_POINT" -nobrowse -readonly
+trap 'hdiutil detach "$DMG_MOUNT_POINT" >/dev/null 2>&1 || true; rm -rf "$VERIFY_DIR"' EXIT
+test -d "$DMG_MOUNT_POINT/$APP_NAME.app"
+test -L "$DMG_MOUNT_POINT/Applications"
+mounted_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$DMG_MOUNT_POINT/$APP_NAME.app/Contents/Info.plist")"
+if [[ "$mounted_version" != "$VERSION" ]]; then
+    echo "DMG app version mismatch: expected $VERSION, got $mounted_version" >&2
+    exit 1
+fi
+DMG_EXTRACT_DIR="$VERIFY_DIR/dmg-extract"
+mkdir -p "$DMG_EXTRACT_DIR"
+COPYFILE_DISABLE=1 ditto --norsrc "$DMG_MOUNT_POINT/$APP_NAME.app" "$DMG_EXTRACT_DIR/$APP_NAME.app"
+xattr -cr "$DMG_EXTRACT_DIR/$APP_NAME.app"
+codesign --verify --deep --strict --verbose=2 "$DMG_EXTRACT_DIR/$APP_NAME.app"
+hdiutil detach "$DMG_MOUNT_POINT"
+rm -rf "$VERIFY_DIR"
+trap - EXIT
 
 echo "Built $ZIP_PATH"
 shasum -a 256 "$ZIP_PATH"
+echo "Built $DMG_PATH"
+shasum -a 256 "$DMG_PATH"

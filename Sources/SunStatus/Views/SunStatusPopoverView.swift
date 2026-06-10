@@ -4,12 +4,19 @@ import SunStatusCore
 
 struct SunStatusPopoverView: View {
     let status: DaylightStatus
+    var isPinned: Bool = false
+    var contentHeight: CGFloat = 560
     var onOpenSettings: () -> Void = {}
+    var onOpenWindow: () -> Void = {}
+    var onExpandMap: () -> Void = {}
+    var onRecenterToUserLocation: (Coordinate) -> Void = { _ in }
+    var onClosePinned: () -> Void = {}
     var onQuit: () -> Void = {
         NSApp.terminate(nil)
     }
 
     @State private var selectedPanel: PopoverPanel = .arc
+    @State private var arcPreviewProgress = 0.5
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -26,13 +33,19 @@ struct SunStatusPopoverView: View {
 
             switch selectedPanel {
             case .arc:
-                SolarArcView(status: status)
+                SolarArcView(status: status, previewProgress: arcPreviewProgress)
 
-                metrics
+                arcPreviewSlider
 
-                modifierStrip
+                arcMetrics
+
+                modifierStrip(arcPreviewModifiers)
             case .sunPath3D:
-                SunPath3DPanel(status: status)
+                SunPath3DPanel(
+                    status: status,
+                    onExpandMap: onExpandMap,
+                    onRecenterToUserLocation: onRecenterToUserLocation
+                )
             }
 
             Divider()
@@ -40,9 +53,13 @@ struct SunStatusPopoverView: View {
             footer
         }
         .padding(14)
-        .frame(width: 380)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(.regularMaterial)
+        .frame(width: 380, height: contentHeight, alignment: .topLeading)
+        .onAppear {
+            arcPreviewProgress = status.solar.daylightProgress ?? 0.5
+        }
+        .onChange(of: status.solar.date) { _, _ in
+            arcPreviewProgress = status.solar.daylightProgress ?? arcPreviewProgress
+        }
     }
 
     private var header: some View {
@@ -111,23 +128,47 @@ struct SunStatusPopoverView: View {
         return "\(timeRemaining(until: transition.date)) until \(transition.kind.displayName)"
     }
 
-    private var metrics: some View {
+    private var arcPreviewSlider: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Text("Preview time")
+                Spacer()
+                Text(timeText(arcPreviewSample.date))
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption.weight(.medium))
+
+            Slider(value: $arcPreviewProgress, in: 0...1) {
+                Text("Preview time")
+            }
+
+            HStack {
+                Text(timeText(status.arcPoints.first?.date ?? status.solar.sunrise))
+                Spacer()
+                Text(timeText(status.arcPoints.last?.date ?? status.solar.sunset))
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private var arcMetrics: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
             GridRow {
-                MetricTile(title: "Brightness", value: "\(Int(status.brightness.score * 100))%", symbolName: "circle.lefthalf.filled")
-                MetricTile(title: "UV", value: status.brightness.uvIndex.map(String.init) ?? "-", symbolName: "sun.max")
+                MetricTile(title: "Brightness", value: "\(Int((arcBrightnessScore * 100).rounded()))%", symbolName: "circle.lefthalf.filled")
+                MetricTile(title: "Clouds", value: percentText(arcPreviewSample.cloudCover ?? status.brightness.cloudCover), symbolName: "cloud")
             }
 
             GridRow {
-                MetricTile(title: "Clouds", value: percentText(status.brightness.cloudCover), symbolName: "cloud")
-                MetricTile(title: "Visibility", value: visibilityText(status.brightness.visibilityMeters), symbolName: "eye")
+                MetricTile(title: "Elevation", value: degreesText(arcPreviewSample.elevationDegrees), symbolName: "arrow.up.right")
+                MetricTile(title: "Azimuth", value: bearingText(arcPreviewSample.azimuthDegrees), symbolName: "location.north.line")
             }
         }
     }
 
-    private var modifierStrip: some View {
+    private func modifierStrip(_ modifiers: [BrightnessModifier]) -> some View {
         HStack(spacing: 8) {
-            ForEach(status.brightness.modifiers, id: \.self) { modifier in
+            ForEach(modifiers, id: \.self) { modifier in
                 Text(modifier.displayName)
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 9)
@@ -139,6 +180,24 @@ struct SunStatusPopoverView: View {
         }
     }
 
+    private var arcPreviewSample: SunPathSample3D {
+        SunPathGeometry.sample(at: arcPreviewProgress, arcPoints: status.arcPoints, fallback: status.solar)
+    }
+
+    private var arcBrightnessScore: Double {
+        arcPreviewSample.brightnessScore ?? brightnessScore(
+            elevationDegrees: arcPreviewSample.elevationDegrees,
+            cloudCover: arcPreviewSample.cloudCover ?? status.brightness.cloudCover
+        )
+    }
+
+    private var arcPreviewModifiers: [BrightnessModifier] {
+        modifiers(
+            elevationDegrees: arcPreviewSample.elevationDegrees,
+            cloudCover: arcPreviewSample.cloudCover ?? status.brightness.cloudCover
+        )
+    }
+
     private var footer: some View {
         HStack {
             Button(action: onOpenSettings) {
@@ -147,6 +206,11 @@ struct SunStatusPopoverView: View {
             .buttonStyle(.bordered)
 
             Spacer()
+
+            Button(action: isPinned ? onClosePinned : onOpenWindow) {
+                Label(isPinned ? "Close" : "Open", systemImage: isPinned ? "xmark" : "macwindow")
+            }
+            .buttonStyle(.bordered)
 
             Button(action: onQuit) {
                 Label("Quit", systemImage: "power")
@@ -170,6 +234,82 @@ struct SunStatusPopoverView: View {
 
         let kilometers = value / 1_000
         return "\(Int(kilometers.rounded())) km"
+    }
+
+    private func timeText(_ date: Date?) -> String {
+        guard let date else {
+            return "--:--"
+        }
+
+        let formatter = DateFormatter()
+        formatter.timeZone = status.timezone
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
+    private func degreesText(_ degrees: Double) -> String {
+        "\(Int(degrees.rounded())) deg"
+    }
+
+    private func bearingText(_ degrees: Double) -> String {
+        "\(cardinalDirection(for: degrees)) \(Int(normalizedDegrees(degrees).rounded())) deg"
+    }
+
+    private func cardinalDirection(for degrees: Double) -> String {
+        let labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        let normalized = normalizedDegrees(degrees)
+        let index = Int((normalized / 45).rounded()) % labels.count
+        return labels[index]
+    }
+
+    private func normalizedDegrees(_ degrees: Double) -> Double {
+        let remainder = degrees.truncatingRemainder(dividingBy: 360)
+        return remainder >= 0 ? remainder : remainder + 360
+    }
+
+    private func brightnessScore(elevationDegrees: Double, cloudCover: Double?) -> Double {
+        let clearSky: Double
+
+        if elevationDegrees <= -6 {
+            clearSky = 0.05
+        } else if elevationDegrees <= 0 {
+            clearSky = 0.05 + (elevationDegrees + 6) / 6 * 0.13
+        } else {
+            let daylight = sin(elevationDegrees * .pi / 180)
+            clearSky = min(max(0.18 + daylight * 0.78, 0), 1)
+        }
+
+        guard let cloudCover else {
+            return clearSky
+        }
+
+        return min(max(clearSky * (1 - cloudCover * 0.80), 0.05), 1)
+    }
+
+    private func modifiers(elevationDegrees: Double, cloudCover: Double?) -> [BrightnessModifier] {
+        var result: [BrightnessModifier] = []
+
+        if elevationDegrees <= 0 {
+            result.append(.lowSun)
+        } else if elevationDegrees < 8 {
+            result.append(.lowSun)
+            result.append(.goldenLight)
+        } else {
+            result.append(.highSun)
+        }
+
+        if let cloudCover {
+            if cloudCover > 0.05 {
+                result.append(.lightClouds)
+            } else {
+                result.append(.clearVisibility)
+            }
+        } else if elevationDegrees >= 45 {
+            result.append(.clearVisibility)
+        }
+
+        return result
     }
 
     private func timeRemaining(until date: Date) -> String {

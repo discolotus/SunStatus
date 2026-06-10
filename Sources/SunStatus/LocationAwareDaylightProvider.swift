@@ -13,6 +13,9 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
     private let manager = CLLocationManager()
     private let lock = NSLock()
     private var locationState = LocationState.pending
+    private var cachedWeather: WeatherSnapshot?
+
+    private let weatherService = WeatherService()
 
     override init() {
         super.init()
@@ -28,10 +31,12 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
 
     func status(at date: Date = .now) -> DaylightStatus {
         let state = currentLocationState()
-        let provider = MockDaylightProvider(
+        let weather = currentWeather()
+        let provider = SolarDaylightProvider(
             locationName: state.locationName,
             coordinate: state.coordinate,
-            timezone: state.timezone
+            timezone: state.timezone,
+            weather: weather
         )
 
         return provider.status(at: date)
@@ -46,10 +51,12 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
             return
         }
 
-        setLocationState(.current(Coordinate(
+        let coordinate = Coordinate(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude
-        )))
+        )
+        setLocationState(.current(coordinate))
+        refreshWeather(for: coordinate)
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -58,6 +65,7 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
         }
 
         setLocationState(.fallback("Location unavailable"))
+        refreshWeather(for: LocationState.fallback("").coordinate)
     }
 
     private func updateAuthorization() {
@@ -75,10 +83,20 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
             manager.requestLocation()
         case .denied:
             setLocationState(.fallback("Location denied"))
+            refreshWeather(for: LocationState.fallback("").coordinate)
         case .restricted:
             setLocationState(.fallback("Location restricted"))
+            refreshWeather(for: LocationState.fallback("").coordinate)
         @unknown default:
             setLocationState(.fallback("Location unavailable"))
+        }
+    }
+
+    private func refreshWeather(for coordinate: Coordinate) {
+        Task { [weak self] in
+            guard let self else { return }
+            let snapshot = await self.weatherService.weather(for: coordinate)
+            self.setWeather(snapshot)
         }
     }
 
@@ -88,10 +106,29 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
         return locationState
     }
 
+    private func currentWeather() -> WeatherSnapshot? {
+        lock.lock()
+        defer { lock.unlock() }
+        return cachedWeather
+    }
+
     private func setLocationState(_ state: LocationState) {
         lock.lock()
         let didChange = locationState != state
         locationState = state
+        lock.unlock()
+
+        guard didChange else {
+            return
+        }
+
+        onStatusChanged?()
+    }
+
+    private func setWeather(_ snapshot: WeatherSnapshot?) {
+        lock.lock()
+        let didChange = cachedWeather != snapshot
+        cachedWeather = snapshot
         lock.unlock()
 
         guard didChange else {

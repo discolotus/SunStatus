@@ -10,7 +10,7 @@ enum SunStatusMain {
         AppDelegate.shared = delegate
 
         app.delegate = delegate
-        app.setActivationPolicy(.accessory)
+        app.setActivationPolicy(AppDelegate.shouldUseRegularActivationPolicy ? .regular : .accessory)
         app.run()
     }
 }
@@ -23,7 +23,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusController = StatusBarController(provider: LocationAwareDaylightProvider())
+        statusController = StatusBarController(provider: Self.makeProvider())
+
+        if Self.shouldOpenPinnedWindowAtLaunch {
+            statusController?.showPinnedWindow()
+        }
+
+        if Self.shouldOpenExpandedMapAtLaunch {
+            statusController?.showExpandedMapWindow()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -47,5 +55,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    fileprivate static var shouldUseRegularActivationPolicy: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("--pin")
+            || arguments.contains("--window")
+            || arguments.contains("--map")
+            || arguments.contains("--expanded-map")
+    }
+
+    private static var shouldOpenPinnedWindowAtLaunch: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("--pin")
+    }
+
+    private static var shouldOpenExpandedMapAtLaunch: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("--window") || arguments.contains("--map") || arguments.contains("--expanded-map")
+    }
+
+    private static func makeProvider() -> DaylightProviding {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--mock") || arguments.contains("--demo") {
+            return MockDaylightProvider(locationName: "San Francisco")
+        }
+
+        return LocationAwareDaylightProvider()
     }
 }

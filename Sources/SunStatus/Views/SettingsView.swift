@@ -32,6 +32,14 @@ struct SettingsView: View {
             Section {
                 LabeledContent("Version", value: version)
                 LabeledContent("Data", value: "Mock daylight")
+
+                Link(destination: SupportLinks.githubSponsorsURL) {
+                    Label("Sponsor on GitHub", systemImage: "heart.fill")
+                }
+
+                Link(destination: SupportLinks.buyMeACoffeeURL) {
+                    Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
+                }
             } header: {
                 Text("About")
             }

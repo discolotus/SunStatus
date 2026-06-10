@@ -47,14 +47,14 @@ The primary interaction model is a menu bar item with a compact live icon. Click
 - Let the user pan, drag, zoom, pitch, and inspect another location.
 - Overlay the sun's path through 3D space for the selected day and selected map location.
 - Show the current sun vector and approximate shadow direction.
-- Eventually support scrubbed time-of-day interaction so users can preview shadow angles.
+- Support scrubbed time-of-day interaction so users can preview shadow angles.
 
 ### Apple Maps 3D Implementation Plan
 
 Apple Maps integration should be built in phases because public MapKit APIs can provide realistic satellite/elevation maps and map overlays, but they do not expose editable 3D satellite/building mesh geometry to SceneKit.
 
-- Phase 1: Add a MapKit-backed satellite view using realistic elevation, centered on the selected coordinate, and draw map-projected sun path, current sun vector, and shadow bearing overlays from the existing `SunPathSample3D` data.
-- Phase 2: Add CoreLocation-backed centering and map selection so the overlay recomputes for the user's current or inspected coordinate.
+- Phase 1: Add a MapKit-backed satellite view using realistic elevation, centered on the selected coordinate, and draw map-projected sun path, current sun vector, and shadow bearing overlays from the existing `SunPathSample3D` data. Completed for current-location and demo coordinates.
+- Phase 2: Add CoreLocation-backed centering and map selection so the overlay recomputes for the user's current or inspected coordinate. Current-location recompute is complete; manual inspected-coordinate selection remains open.
 - Phase 3: Synchronize the existing SceneKit sky-dome model with the MapKit camera heading and pitch, keeping the SceneKit prototype as the precision visualization layer.
 - Phase 4: Research building-aware shadows only after the useful MapKit overlay is working. If true occlusion or building-height shadows become essential, evaluate non-MapKit sources such as OSM building extrusions, 3D tiles, Mapbox, Cesium, or ArcGIS.
 - MVP success: users can open the 3D tab, see real satellite/elevation context, scrub time, and understand the sun bearing and approximate surface shadow direction over the selected map location.
@@ -151,10 +151,14 @@ struct SunArcPoint {
 
 ### 2. Astronomy Engine
 
-- Implement sunrise and sunset calculations for a date and coordinate.
-- Compute solar elevation, azimuth, solar noon, and daylight progress.
-- Add unit tests for representative locations, including polar-day and polar-night edge cases.
-- Wire real astronomy data into the menu bar icon and popover arc.
+- [x] Implement sunrise and sunset calculations for a date and coordinate.
+- [x] Compute solar elevation, azimuth, solar noon, and daylight progress.
+- [x] Add unit tests for representative locations, including polar-day and polar-night edge cases.
+- [x] Wire real astronomy data into the menu bar icon and popover arc.
+
+Implemented in `SolarPositionCalculator` (NOAA / Meeus solar position algorithm) and surfaced
+through `SolarDaylightProvider`, which replaces the sine-curve `MockDaylightProvider` on the
+production path. `MockDaylightProvider` is retained for SwiftUI previews and fixtures.
 
 ### 3. Location Support
 
@@ -165,11 +169,12 @@ struct SunArcPoint {
 
 ### 4. Brightness Forecast
 
-- Integrate weather data through a provider abstraction.
-- Fetch current and hourly cloud cover, UV index, visibility, and condition signals.
-- Build the perceived brightness score.
-- Render the brightness line along the solar arc.
-- Explain brightness modifiers in short labels.
+- [x] Integrate weather data through a provider abstraction.
+- [x] Fetch current and hourly cloud cover, UV index, and visibility.
+- [x] Build the perceived brightness score.
+- [x] Render cloud/brightness variation along the solar arc.
+- [x] Explain brightness modifiers in short labels.
+- Add richer condition signals such as fog, smoke, air quality, and precipitation when a provider supports them.
 
 ### 5. Menu Bar Icon Polish
 
@@ -180,7 +185,7 @@ struct SunArcPoint {
 ### 6. 3D Map and Sun Path
 
 - [x] Add a MapKit-based satellite/realistic-elevation prototype view.
-- [x] Overlay map-projected mock sun path, current sun vector, and shadow bearing.
+- [x] Overlay real map-projected sun path, current sun vector, shadow bearing, and dashed ground projections.
 - [x] Center on the user's current location by default when CoreLocation is authorized.
 - [ ] Recompute the overlay for a user-selected map coordinate.
 - [x] Keep the SceneKit sky-dome model available as a companion precision view.
@@ -189,7 +194,7 @@ struct SunArcPoint {
 - [ ] Research building-aware shadows and 3D tiles only after the MapKit overlay MVP is useful.
 - [x] Add a native SceneKit 3D sun-angle prototype in the popover.
 - [x] Allow orbit/zoom inspection in the SceneKit prototype.
-- [x] Overlay the mock sun path in 3D space.
+- [x] Overlay the real sun path in 3D space.
 - [x] Show current sun vector and approximate shadow direction.
 - [x] Add a time scrubber for previewing future shadow angles.
 
@@ -202,49 +207,54 @@ struct SunArcPoint {
 
 ### 8. Homebrew Distribution Prep
 
-- Add app icon, signing configuration, and release build settings.
-- Prepare privacy notes for location and weather usage.
+- [x] Add app icon and release build settings.
+- [x] Prepare privacy notes for location and weather usage.
 - Add a lightweight onboarding flow for permissions.
 - Produce a signed and notarized macOS release artifact suitable for direct distribution.
-- Produce an installable `.dmg` artifact with `SunStatus.app` and an Applications shortcut.
-- Attach both `.zip` and `.dmg` artifacts to GitHub releases when a release version lands on `main`.
-- Add release workflow checks that verify the `.dmg` mounts, contains the expected app bundle, and preserves the generated version metadata.
+- [x] Produce an installable `.dmg` artifact with `SunStatus.app` and an Applications shortcut.
+- [x] Attach both `.zip` and `.dmg` artifacts to GitHub releases when a release version lands on `main`.
+- [x] Add release workflow checks that verify the `.dmg` mounts, contains the expected app bundle, and preserves the generated version metadata.
 - Decide whether the Homebrew cask should continue to use the `.zip` archive or switch to the `.dmg` once notarization is in place.
 - Create release archives with stable version tags and checksums.
-- Publish a Homebrew cask formula that installs the app from the release artifact.
+- [x] Add a Homebrew cask formula that installs the app from the release artifact.
+- Publish the Homebrew tap and keep the cask checksum updated for each release.
 - Document the install command, update flow, and uninstall command for users.
 
 ### 9. DMG and Notarized Distribution
 
-- Add a repeatable DMG creation script using native macOS tooling such as `hdiutil`.
-- Include `SunStatus.app`, an Applications folder shortcut, and a simple polished volume name/window layout.
+- [x] Add a repeatable DMG creation script using native macOS tooling such as `hdiutil`.
+- [x] Include `SunStatus.app`, an Applications folder shortcut, and a simple polished volume name.
 - Add Developer ID signing configuration for release builds.
 - Add Apple notarization and stapling steps once credentials are available in CI.
-- Update the GitHub release workflow to upload the notarized `.dmg` alongside the existing `.zip`.
-- Add CI validation that mounts the generated DMG, confirms the bundle identifier/version, and launches or inspects the app bundle without modifying user state.
-- Document direct-download install steps and expected Gatekeeper behavior.
+- [x] Update the GitHub release workflow to upload the `.dmg` alongside the existing `.zip`.
+- [x] Add CI validation that mounts the generated DMG, confirms the version metadata, and inspects the app bundle without modifying user state.
+- [x] Document direct-download install steps and expected Gatekeeper behavior.
 - Keep Homebrew distribution working while adding the friendlier DMG path for non-Homebrew users.
 
 ## Immediate Next Steps
 
-The next active work should focus on the 3D map MVP:
+The 3D map MVP is now usable for release-candidate review:
 
-- Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
-- Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the current mock coordinate.
-- Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
-- Add real astronomy data before treating the MapKit overlay as physically trustworthy.
+- [x] Add a MapKit-backed satellite/realistic-elevation panel to the existing 3D tab.
+- [x] Reuse `SunPathSample3D` and map-project the path, selected sun vector, and shadow bearing around the selected coordinate.
+- [x] Preserve the existing SceneKit prototype as a model view for sun-angle inspection.
+- [x] Add real astronomy data before treating the MapKit overlay as physically trustworthy. The overlay now reads from `SolarPositionCalculator`.
+- [x] Recenter the compact widget and expanded map around the current location, including solar geometry and weather refresh.
+- [x] Add Mercator-aware correction, projected ground overlays, and compact camera orbit with an interaction pause.
+- Synchronize the SceneKit model orientation with the MapKit camera heading and pitch if the model view remains a first-class release surface.
+- Recompute the overlay for a user-selected map coordinate rather than only the current location.
 
 Distribution work remains queued after the current map slice:
 
-- Decide the bundle identifier, minimum macOS version, and signing/notarization setup.
-- Add a repeatable release build process that outputs a signed `.app` inside a versioned archive.
-- Add a repeatable DMG build process that packages the app as a direct macOS install artifact.
-- Update the release workflow so version bumps on `main` attach the DMG artifact as well as the zip archive.
-- Validate DMG mount, app bundle contents, version metadata, and install flow in CI.
+- Decide production signing/notarization setup.
+- [x] Add a repeatable release build process that outputs an ad-hoc signed `.app` inside a versioned archive.
+- [x] Add a repeatable DMG build process that packages the app as a direct macOS install artifact.
+- [x] Update the release workflow so version bumps on `main` attach the DMG artifact as well as the zip archive.
+- [x] Validate DMG mount, app bundle contents, version metadata, and install flow in CI.
 - Tag releases consistently so Homebrew can target immutable download URLs.
-- Create a Homebrew tap, for example `tannerleo/homebrew-sunstatus`.
-- Add a `Casks/sunstatus.rb` cask that points to the release archive and verifies its SHA-256 checksum.
-- Update the README with the Homebrew installation command once the tap and first release exist.
+- Create or update the Homebrew tap, expected as `discolotus/homebrew-sunstatus` for the documented `discolotus/sunstatus/sunstatus` install command.
+- [x] Add a `Casks/sunstatus.rb` cask that points to the DMG release archive and verifies its SHA-256 checksum.
+- [x] Update the README with the Homebrew installation command and direct DMG install notes.
 - Validate install, launch, upgrade, and uninstall behavior locally through Homebrew.
 
 ## First Feature Branch Scope
