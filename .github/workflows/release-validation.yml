@@ -1,0 +1,46 @@
+name: Release Validation
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-dry-run:
+    name: Release Dry Run
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect release version
+        id: version
+        run: |
+          set -euo pipefail
+
+          version="$(sed -nE 's/^VERSION="\$\{1:-([0-9]+\.[0-9]+\.[0-9]+)\}"$/\1/p' scripts/build-release.sh | head -1)"
+          if [[ -z "$version" ]]; then
+            echo "Could not parse release version from scripts/build-release.sh" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Detected release version: $version"
+
+      - name: Build and verify release artifacts
+        run: scripts/build-release.sh "${{ steps.version.outputs.version }}"
+
+      - name: Dry-run Homebrew cask update
+        run: |
+          set -euo pipefail
+
+          dmg_sha="$(shasum -a 256 .build/release/SunStatus.dmg | awk '{ print $1 }')"
+          scripts/update-homebrew-cask.sh "${{ steps.version.outputs.version }}" "$dmg_sha"
+          git diff --check -- Casks/sunstatus.rb
+          git diff -- Casks/sunstatus.rb
