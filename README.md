@@ -1,5 +1,7 @@
 # SunStatus
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FDD231?style=for-the-badge&logo=buymeacoffee&logoColor=000)](https://buymeacoffee.com/tannermleoy)
+
 SunStatus is a native macOS menu bar app for understanding the sun at a glance: where it is in its daily arc, how long until the next daylight transition, and how bright the outside light is likely to feel.
 
 <p align="center">
@@ -42,12 +44,12 @@ SunStatus is currently ad-hoc signed rather than Developer ID signed and notariz
 
 ## Support
 
-SunStatus is free while the release candidate matures. If the app is useful to you, you can support development through [GitHub Sponsors](https://github.com/sponsors/discolotus) or [Buy Me a Coffee](https://www.buymeacoffee.com/discolotus). The in-app Settings window includes both support links.
+SunStatus is free while the release candidate matures. If the app is useful to you, you can support development through [GitHub Sponsors](https://github.com/sponsors/discolotus) or [Buy Me a Coffee](https://buymeacoffee.com/tannermleoy). The in-app Settings window includes both support links.
 
 To finish setup:
 
 - Enable GitHub Sponsors for the `discolotus` account or organization.
-- Create a Buy Me a Coffee creator page with the `discolotus` handle, or update `.github/FUNDING.yml` and `SupportLinks.swift` if you choose a different handle.
+- Create a Buy Me a Coffee creator page with the `tannermleoy` handle, or update `.github/FUNDING.yml` and `SupportLinks.swift` if you choose a different handle.
 - In the GitHub repository settings, enable Sponsorships so GitHub displays the Sponsor button from `.github/FUNDING.yml`.
 
 ## Run Locally
