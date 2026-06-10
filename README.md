@@ -35,6 +35,7 @@ SunStatus is a native macOS menu bar app for understanding the sun at a glance: 
 Install SunStatus with Homebrew once the tap has been published:
 
 ```sh
+brew tap discolotus/sunstatus
 brew install --cask discolotus/sunstatus/sunstatus
 ```
 
