@@ -7,7 +7,16 @@ cask "sunstatus" do
   desc "Menu bar sun status, daylight, and 3D sun-path map"
   homepage "https://github.com/discolotus/SunStatus"
 
+  depends_on macos: :sonoma
+
   app "SunStatus.app"
+
+  zap trash: [
+    "~/Library/Application Support/SunStatus",
+    "~/Library/Caches/com.discolotus.SunStatus",
+    "~/Library/Preferences/com.discolotus.SunStatus.plist",
+    "~/Library/Saved Application State/com.discolotus.SunStatus.savedState",
+  ]
 
   caveats do
     <<~EOS
@@ -16,9 +25,4 @@ cask "sunstatus" do
       first launch.
     EOS
   end
-
-  zap trash: [
-    "~/Library/Preferences/com.discolotus.SunStatus.plist",
-    "~/Library/Saved Application State/com.discolotus.SunStatus.savedState",
-  ]
 end

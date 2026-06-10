@@ -23,6 +23,8 @@ jobs:
   release:
     name: Publish Versioned Release
     runs-on: macos-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
     steps:
       - name: Check out repository
@@ -64,8 +66,10 @@ jobs:
             exit 1
           fi
 
-          echo "version=$release_version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$release_version" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$release_version"
+            echo "tag=v$release_version"
+          } >> "$GITHUB_OUTPUT"
           echo "Releasing v$release_version from $(git rev-parse --short HEAD)"
 
       - name: Run tests
@@ -134,3 +138,49 @@ jobs:
             --target "$(git rev-parse HEAD)" \
             --title "SunStatus $TAG" \
             --notes-file /tmp/release-notes.md
+
+      - name: Trigger Homebrew tap sync
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ env.HOMEBREW_TAP_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          triggered_after="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run sync-sunstatus-cask.yml \
+            --repo discolotus/homebrew-sunstatus \
+            --ref main \
+            -f tag="$TAG"
+
+          tap_run_id=""
+          for _ in {1..20}; do
+            tap_run_id="$(gh run list \
+              --repo discolotus/homebrew-sunstatus \
+              --workflow sync-sunstatus-cask.yml \
+              --event workflow_dispatch \
+              --limit 10 \
+              --json databaseId,createdAt \
+              --jq '.[] | select(.createdAt >= "'"$triggered_after"'") | .databaseId' \
+              | head -1)"
+
+            if [[ -n "$tap_run_id" ]]; then
+              break
+            fi
+
+            sleep 3
+          done
+
+          if [[ -z "$tap_run_id" ]]; then
+            echo "Timed out waiting for the Homebrew tap sync workflow to start." >&2
+            exit 1
+          fi
+
+          gh run watch "$tap_run_id" \
+            --repo discolotus/homebrew-sunstatus \
+            --exit-status
+
+      - name: Note skipped Homebrew tap sync
+        if: env.HOMEBREW_TAP_TOKEN == ''
+        run: |
+          echo "HOMEBREW_TAP_TOKEN is not configured; the tap's hourly sync workflow will pick up this release."

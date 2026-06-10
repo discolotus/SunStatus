@@ -90,13 +90,13 @@ scripts/build-release.sh 0.4.0
 
 The script outputs `.build/release/SunStatus.zip` and `.build/release/SunStatus.dmg`, generates `Resources/AppIcon.icns` from `Assets/AppIcon.png`, codesigns the bundle ad hoc, mounts and verifies the DMG contents, and prints SHA-256 checksums.
 
-After building a release, update the Homebrew cask with the DMG checksum:
+After building a release locally, update the Homebrew cask with the DMG checksum:
 
 ```sh
 scripts/update-homebrew-cask.sh 0.4.0 <SunStatus.dmg sha256>
 ```
 
-To publish the documented Homebrew command, copy `Casks/sunstatus.rb` into the `discolotus/homebrew-sunstatus` tap repository after the matching GitHub release exists, then run Homebrew audit/install checks from that tap.
+Tagged GitHub releases publish `.zip`, `.dmg`, `SHA256SUMS`, and a cask patch. The `discolotus/homebrew-sunstatus` tap also runs an hourly sync that updates the cask from the latest SunStatus release. For immediate tap updates after a release, configure the `HOMEBREW_TAP_TOKEN` repository secret with a fine-grained GitHub token for `discolotus/homebrew-sunstatus` that has Actions read/write permission.
 
 ## App Icon
 
@@ -104,6 +104,6 @@ The source app icon is tracked at `Assets/AppIcon.png`. Both `scripts/build-rele
 
 ## Project Status
 
-SunStatus is preparing a map-focused release candidate. The core app, real astronomy engine, current-location support, Open-Meteo weather enrichment, MapKit 3D overlays, zip/DMG release script, Homebrew cask template, and test suite are in place. Remaining distribution work is mainly Developer ID signing, notarization, publishing the Homebrew tap, and automating cask checksum updates.
+SunStatus is preparing a map-focused release candidate. The core app, real astronomy engine, current-location support, Open-Meteo weather enrichment, MapKit 3D overlays, zip/DMG release script, Homebrew cask template, tap sync workflow, and test suite are in place. Remaining distribution work is mainly Developer ID signing and notarization.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes and [ROADMAP.md](ROADMAP.md) for the longer implementation plan.
