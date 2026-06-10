@@ -113,19 +113,22 @@ public struct SunArcPoint: Equatable, Sendable, Identifiable {
     public let elevationDegrees: Double
     public let azimuthDegrees: Double
     public let brightnessScore: Double?
+    public let cloudCover: Double?
 
     public init(
         date: Date,
         progress: Double,
         elevationDegrees: Double,
         azimuthDegrees: Double,
-        brightnessScore: Double?
+        brightnessScore: Double?,
+        cloudCover: Double? = nil
     ) {
         self.date = date
         self.progress = progress
         self.elevationDegrees = elevationDegrees
         self.azimuthDegrees = azimuthDegrees
         self.brightnessScore = brightnessScore
+        self.cloudCover = cloudCover
     }
 }
 

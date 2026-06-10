@@ -21,9 +21,9 @@ final class WeatherSnapshotTests: XCTestCase {
 
         let snapshot = try WeatherSnapshot.decodeOpenMeteo(from: json)
 
-        XCTAssertEqual(snapshot.cloudCover, 0.25, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(snapshot.cloudCover), 0.25, accuracy: 0.001)
         XCTAssertEqual(snapshot.uvIndex, 6)
-        XCTAssertEqual(snapshot.visibilityMeters, 24_140, accuracy: 0.1)
+        XCTAssertEqual(try XCTUnwrap(snapshot.visibilityMeters), 24_140, accuracy: 0.1)
     }
 
     func testUVIndexRoundsCorrectly() throws {
@@ -43,13 +43,49 @@ final class WeatherSnapshotTests: XCTestCase {
         {"current": {"cloud_cover": 100, "visibility": 5000, "uv_index": 0}}
         """.data(using: .utf8)!
         let snapshot = try WeatherSnapshot.decodeOpenMeteo(from: json)
-        XCTAssertEqual(snapshot.cloudCover, 1.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(snapshot.cloudCover), 1.0, accuracy: 0.001)
 
         let json2 = """
         {"current": {"cloud_cover": 0, "visibility": 5000, "uv_index": 8}}
         """.data(using: .utf8)!
         let snapshot2 = try WeatherSnapshot.decodeOpenMeteo(from: json2)
-        XCTAssertEqual(snapshot2.cloudCover, 0.0, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(snapshot2.cloudCover), 0.0, accuracy: 0.001)
+    }
+
+    func testDecodesHourlyCloudCoverForecast() throws {
+        let json = """
+        {
+          "current": {"cloud_cover": 20, "visibility": 10000, "uv_index": 4},
+          "hourly": {
+            "time": ["2026-06-09T15:00", "2026-06-09T16:00", "2026-06-09T17:00"],
+            "cloud_cover": [5, 60, 95]
+          }
+        }
+        """.data(using: .utf8)!
+
+        let snapshot = try WeatherSnapshot.decodeOpenMeteo(from: json)
+
+        XCTAssertEqual(snapshot.cloudCoverForecast.count, 3)
+        XCTAssertEqual(snapshot.cloudCoverForecast.map(\.cloudCover), [0.05, 0.6, 0.95])
+    }
+
+    func testNearestHourlyCloudCoverPreferredOverCurrentCloudCover() throws {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        let snapshot = WeatherSnapshot(
+            cloudCover: 0.2,
+            uvIndex: nil,
+            visibilityMeters: nil,
+            cloudCoverForecast: [
+                CloudCoverSample(date: formatter.date(from: "2026-06-09T15:00")!, cloudCover: 0.1),
+                CloudCoverSample(date: formatter.date(from: "2026-06-09T16:00")!, cloudCover: 0.8),
+            ]
+        )
+
+        XCTAssertEqual(snapshot.cloudCover(at: formatter.date(from: "2026-06-09T15:40")!), 0.8)
     }
 
     func testNilFieldsOnMissingCurrentKeys() throws {

@@ -67,7 +67,7 @@ public struct SolarDaylightProvider: DaylightProviding {
             timezone: timezone,
             solar: solar,
             brightness: brightness,
-            arcPoints: arcPoints(for: date, events: events)
+            arcPoints: arcPoints(for: arcDate(for: date, events: events))
         )
     }
 
@@ -97,7 +97,18 @@ public struct SolarDaylightProvider: DaylightProviding {
     /// normal sunrise/sunset, the arc spans daylight (progress 0 → 1 from sunrise to
     /// sunset). During polar day/night the arc spans the full civil day so the 3D
     /// overlay still has a continuous path to draw.
-    private func arcPoints(for date: Date, events: SolarDayEvents) -> [SunArcPoint] {
+    private func arcDate(for date: Date, events: SolarDayEvents) -> Date {
+        guard let sunset = events.sunset, date > sunset else {
+            return date
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+        return calendar.date(byAdding: .day, value: 1, to: date) ?? date.addingTimeInterval(86_400)
+    }
+
+    private func arcPoints(for date: Date) -> [SunArcPoint] {
+        let events = SolarPositionCalculator.events(on: date, coordinate: coordinate, timezone: timezone)
         let span = daylightSpan(for: date, events: events)
         let duration = span.end.timeIntervalSince(span.start)
         guard duration > 0 else {
@@ -108,13 +119,15 @@ public struct SolarDaylightProvider: DaylightProviding {
             let ratio = Double(index) / Double(arcSampleCount)
             let pointDate = span.start.addingTimeInterval(duration * ratio)
             let position = SolarPositionCalculator.position(at: pointDate, coordinate: coordinate)
+            let pointCloudCover = weather?.cloudCover(at: pointDate)
 
             return SunArcPoint(
                 date: pointDate,
                 progress: ratio,
                 elevationDegrees: position.elevationDegrees,
                 azimuthDegrees: position.azimuthDegrees,
-                brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover)
+                brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: pointCloudCover),
+                cloudCover: pointCloudCover
             )
         }
     }

@@ -133,19 +133,40 @@ public struct MockDaylightProvider: DaylightProviding {
     }
 
     private func arcPoints(for date: Date, calendar: Calendar) -> [SunArcPoint] {
-        stride(from: 0, through: 12, by: 1).compactMap { index in
+        guard
+            let sunrise = calendar.date(bySettingHour: 6, minute: 11, second: 0, of: date),
+            let sunset = calendar.date(bySettingHour: 20, minute: 37, second: 0, of: date)
+        else {
+            return []
+        }
+
+        let duration = sunset.timeIntervalSince(sunrise)
+
+        return stride(from: 0, through: 12, by: 1).map { index in
             let progress = Double(index) / 12
-            guard let pointDate = calendar.date(bySettingHour: 6 + index, minute: index < 12 ? 15 : 37, second: 0, of: date) else {
-                return nil
-            }
+            let pointDate = sunrise.addingTimeInterval(duration * progress)
 
             return SunArcPoint(
                 date: pointDate,
                 progress: progress,
                 elevationDegrees: mockElevation(progress: progress),
                 azimuthDegrees: mockAzimuth(progress: progress),
-                brightnessScore: brightnessScore(progress: progress)
+                brightnessScore: brightnessScore(progress: progress),
+                cloudCover: mockCloudCover(progress: progress)
             )
+        }
+    }
+
+    private func mockCloudCover(progress: Double) -> Double {
+        switch progress {
+        case 0..<0.25:
+            return 0.12
+        case 0.25..<0.55:
+            return 0.68
+        case 0.55..<0.78:
+            return 0.35
+        default:
+            return 0.08
         }
     }
 }

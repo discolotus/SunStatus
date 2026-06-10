@@ -64,8 +64,9 @@ actor WeatherService {
             URLQueryItem(name: "latitude", value: String(format: "%.4f", coordinate.latitude)),
             URLQueryItem(name: "longitude", value: String(format: "%.4f", coordinate.longitude)),
             URLQueryItem(name: "current", value: "cloud_cover,visibility,uv_index"),
+            URLQueryItem(name: "hourly", value: "cloud_cover"),
             URLQueryItem(name: "forecast_days", value: "1"),
-            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "timezone", value: "GMT"),
         ]
 
         guard let url = components.url else {

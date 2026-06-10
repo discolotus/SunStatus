@@ -35,8 +35,17 @@ public struct SunPathSample3D: Equatable, Sendable, Identifiable {
     public let direction: SunVector3
     public let shadowDirection: SunVector3?
     public let shadowBearingDegrees: Double?
+    public let brightnessScore: Double?
+    public let cloudCover: Double?
 
-    public init(date: Date, progress: Double, elevationDegrees: Double, azimuthDegrees: Double) {
+    public init(
+        date: Date,
+        progress: Double,
+        elevationDegrees: Double,
+        azimuthDegrees: Double,
+        brightnessScore: Double? = nil,
+        cloudCover: Double? = nil
+    ) {
         self.date = date
         self.progress = progress
         self.elevationDegrees = elevationDegrees
@@ -44,6 +53,8 @@ public struct SunPathSample3D: Equatable, Sendable, Identifiable {
         self.direction = SunPathGeometry.direction(azimuthDegrees: azimuthDegrees, elevationDegrees: elevationDegrees)
         self.shadowDirection = SunPathGeometry.shadowDirection(azimuthDegrees: azimuthDegrees, elevationDegrees: elevationDegrees)
         self.shadowBearingDegrees = SunPathGeometry.shadowBearingDegrees(azimuthDegrees: azimuthDegrees, elevationDegrees: elevationDegrees)
+        self.brightnessScore = brightnessScore
+        self.cloudCover = cloudCover
     }
 }
 
@@ -90,7 +101,9 @@ public enum SunPathGeometry {
                     date: $0.date,
                     progress: $0.progress,
                     elevationDegrees: $0.elevationDegrees,
-                    azimuthDegrees: $0.azimuthDegrees
+                    azimuthDegrees: $0.azimuthDegrees,
+                    brightnessScore: $0.brightnessScore,
+                    cloudCover: $0.cloudCover
                 )
             }
     }
@@ -117,7 +130,9 @@ public enum SunPathGeometry {
                 date: firstPoint.date,
                 progress: firstPoint.progress,
                 elevationDegrees: firstPoint.elevationDegrees,
-                azimuthDegrees: firstPoint.azimuthDegrees
+                azimuthDegrees: firstPoint.azimuthDegrees,
+                brightnessScore: firstPoint.brightnessScore,
+                cloudCover: firstPoint.cloudCover
             )
         }
 
@@ -127,7 +142,9 @@ public enum SunPathGeometry {
                 date: point.date,
                 progress: point.progress,
                 elevationDegrees: point.elevationDegrees,
-                azimuthDegrees: point.azimuthDegrees
+                azimuthDegrees: point.azimuthDegrees,
+                brightnessScore: point.brightnessScore,
+                cloudCover: point.cloudCover
             )
         }
 
@@ -144,7 +161,9 @@ public enum SunPathGeometry {
                 date: date,
                 progress: clampedProgress,
                 elevationDegrees: interpolate(lower.elevationDegrees, upper.elevationDegrees, ratio: ratio),
-                azimuthDegrees: interpolateAngle(lower.azimuthDegrees, upper.azimuthDegrees, ratio: ratio)
+                azimuthDegrees: interpolateAngle(lower.azimuthDegrees, upper.azimuthDegrees, ratio: ratio),
+                brightnessScore: interpolateOptional(lower.brightnessScore, upper.brightnessScore, ratio: ratio),
+                cloudCover: interpolateOptional(lower.cloudCover, upper.cloudCover, ratio: ratio)
             )
         }
 
@@ -152,7 +171,9 @@ public enum SunPathGeometry {
             date: firstPoint.date,
             progress: firstPoint.progress,
             elevationDegrees: firstPoint.elevationDegrees,
-            azimuthDegrees: firstPoint.azimuthDegrees
+            azimuthDegrees: firstPoint.azimuthDegrees,
+            brightnessScore: firstPoint.brightnessScore,
+            cloudCover: firstPoint.cloudCover
         )
     }
 
@@ -167,6 +188,17 @@ public enum SunPathGeometry {
 
     private static func interpolate(_ lower: Double, _ upper: Double, ratio: Double) -> Double {
         lower + ((upper - lower) * ratio)
+    }
+
+    private static func interpolateOptional(_ lower: Double?, _ upper: Double?, ratio: Double) -> Double? {
+        switch (lower, upper) {
+        case let (.some(lower), .some(upper)):
+            return interpolate(lower, upper, ratio: ratio)
+        case let (.some(value), .none), let (.none, .some(value)):
+            return value
+        case (.none, .none):
+            return nil
+        }
     }
 
     private static func interpolateAngle(_ lower: Double, _ upper: Double, ratio: Double) -> Double {
