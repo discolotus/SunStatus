@@ -1,11 +1,27 @@
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
-struct SolarArcView: View {
-    let status: DaylightStatus
-    var previewProgress: Double?
+public struct SolarArcView: View {
+    private let status: DaylightStatus
+    private var previewProgress: Double?
+    private var showsTimeLabels: Bool
+    private var arcHeight: CGFloat
 
-    var body: some View {
+    public init(
+        status: DaylightStatus,
+        previewProgress: Double? = nil,
+        showsTimeLabels: Bool = true,
+        arcHeight: CGFloat = 116
+    ) {
+        self.status = status
+        self.previewProgress = previewProgress
+        self.showsTimeLabels = showsTimeLabels
+        self.arcHeight = arcHeight
+    }
+
+    public var body: some View {
         VStack(spacing: 8) {
             Canvas { context, size in
                 let geometry = SolarArcGeometry(size: size, verticalOffset: 14)
@@ -21,18 +37,20 @@ struct SolarArcView: View {
                 drawCompletedArc(in: context, geometry: geometry)
                 drawSun(in: context, geometry: geometry)
             }
-            .frame(height: 116)
+            .frame(height: arcHeight)
 
-            HStack {
-                Text(timeText(status.solar.sunrise))
-                Spacer()
-                Text(timeText(status.solar.solarNoon))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(timeText(status.solar.sunset))
+            if showsTimeLabels {
+                HStack {
+                    Text(timeText(status.solar.sunrise))
+                    Spacer()
+                    Text(timeText(status.solar.solarNoon))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(timeText(status.solar.sunset))
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
             }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Solar arc from \(timeText(status.solar.sunrise)) to \(timeText(status.solar.sunset))")

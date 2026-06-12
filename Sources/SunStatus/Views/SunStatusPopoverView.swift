@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
+#if canImport(SunStatusUI)
+import SunStatusUI
+#endif
 
 struct SunStatusPopoverView: View {
     let status: DaylightStatus

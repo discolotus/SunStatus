@@ -13,9 +13,16 @@ let package = Package(
     ],
     targets: [
         .target(name: "SunStatusCore"),
+        .target(
+            name: "SunStatusUI",
+            dependencies: ["SunStatusCore"]
+        ),
         .executableTarget(
             name: "SunStatus",
-            dependencies: ["SunStatusCore"]
+            dependencies: [
+                "SunStatusCore",
+                "SunStatusUI"
+            ]
         ),
         .testTarget(
             name: "SunStatusCoreTests",

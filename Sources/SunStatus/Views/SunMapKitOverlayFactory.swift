@@ -1,6 +1,8 @@
 import AppKit
 import MapKit
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 struct StyledSunMapKitOverlay {
     let overlay: any MKOverlay

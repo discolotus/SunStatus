@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 struct SunPath3DPanel: View {
     let status: DaylightStatus

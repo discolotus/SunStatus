@@ -4,6 +4,22 @@ All notable changes to SunStatus will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added a macOS WidgetKit desktop widget that renders the SunStatus arc with daylight progress, brightness, next transition, and solar elevation.
+- Added a separate large `SunStatus Detail` WidgetKit configuration with a larger arc layout and daylight metrics.
+- Added a native Xcode project with a real `SunStatusWidgetExtension` app-extension target for WidgetKit development and packaging.
+- Added app-target Xcode canvas previews for the small, medium, and large widget layouts plus a `scripts/verify-widgets.sh` check for the standard WidgetKit development loop.
+
+### Changed
+
+- Changed local and release bundle builds to use the Xcode `SunStatus` scheme so the widget extension is produced by Xcode instead of a hand-assembled SwiftPM executable bundle.
+- Bumped the default app and widget extension version to `0.4.1` so macOS refreshes the WidgetKit descriptor after adding the third widget configuration.
+
+### Notes
+
+- A live MapKit `Map` view was tested in the large widget, but WidgetKit did not surface that configuration in the macOS widget gallery. The large widget now uses WidgetKit-supported SwiftUI views; a future MapKit version should use a static map snapshot generated outside the widget view.
+
 ## [0.4.0] - 2026-06-10
 
 ### Added

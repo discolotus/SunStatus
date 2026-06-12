@@ -2,19 +2,29 @@
 set -euo pipefail
 
 APP_NAME="SunStatus"
-BUNDLE_ID="com.discolotus.SunStatus"
+WIDGET_NAME="SunStatusWidgetExtension"
+WIDGET_BUNDLE_ID="com.discolotus.SunStatus.WidgetExtension"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_PATH="$ROOT_DIR/$APP_NAME.xcodeproj"
+SCHEME="$APP_NAME"
+CONFIGURATION="Debug"
+HOST_ARCH="$(uname -m)"
+DERIVED_DATA_DIR="$ROOT_DIR/.build/xcode-dev"
+PRODUCT_APP_PATH="$DERIVED_DATA_DIR/Build/Products/$CONFIGURATION/$APP_NAME.app"
+PRODUCT_WIDGET_PATH="$PRODUCT_APP_PATH/Contents/PlugIns/$WIDGET_NAME.appex"
 DIST_DIR="$ROOT_DIR/dist"
-BUNDLE_PATH="$DIST_DIR/$APP_NAME.app"
-EXECUTABLE_PATH="$BUNDLE_PATH/Contents/MacOS/$APP_NAME"
-RESOURCES_PATH="$BUNDLE_PATH/Contents/Resources"
-ICON_SOURCE="$ROOT_DIR/Assets/AppIcon.png"
-ICONSET_PATH="$DIST_DIR/AppIcon.iconset"
+RELEASE_PRODUCT_BUNDLE_PATH="$ROOT_DIR/.build/release/products/$APP_NAME.app"
+RELEASE_PRODUCT_WIDGET_PATH="$RELEASE_PRODUCT_BUNDLE_PATH/Contents/PlugIns/$WIDGET_NAME.appex"
+INSTALL=false
 VERIFY=false
 APP_ARGS=()
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
 
 for arg in "$@"; do
   case "$arg" in
+    --install)
+      INSTALL=true
+      ;;
     --verify)
       VERIFY=true
       ;;
@@ -24,59 +34,74 @@ for arg in "$@"; do
   esac
 done
 
+if [[ "$INSTALL" == true ]]; then
+  BUNDLE_PATH="/Applications/$APP_NAME.app"
+else
+  BUNDLE_PATH="$DIST_DIR/$APP_NAME.app"
+fi
+WIDGET_BUNDLE_PATH="$BUNDLE_PATH/Contents/PlugIns/$WIDGET_NAME.appex"
+STALE_DIST_BUNDLE_PATH="$DIST_DIR/$APP_NAME.app"
+STALE_DIST_WIDGET_PATH="$STALE_DIST_BUNDLE_PATH/Contents/PlugIns/$WIDGET_NAME.appex"
+
 cd "$ROOT_DIR"
 
 /usr/bin/pkill -x "$APP_NAME" 2>/dev/null || true
 
-swift build
+if command -v xcodegen >/dev/null 2>&1; then
+  xcodegen generate --quiet --spec "$ROOT_DIR/project.yml"
+elif [[ ! -d "$PROJECT_PATH" ]]; then
+  echo "SunStatus.xcodeproj is missing and xcodegen is not installed." >&2
+  exit 1
+fi
+
+xcodebuild \
+  -quiet \
+  -project "$PROJECT_PATH" \
+  -scheme "$SCHEME" \
+  -configuration "$CONFIGURATION" \
+  -destination "platform=macOS,arch=$HOST_ARCH" \
+  -derivedDataPath "$DERIVED_DATA_DIR" \
+  CODE_SIGN_IDENTITY=- \
+  CODE_SIGN_STYLE=Manual \
+  build
+
+test -d "$PRODUCT_APP_PATH"
+test -d "$PRODUCT_WIDGET_PATH"
+
+while IFS= read -r stale_widget_path; do
+  stale_app_path="${stale_widget_path%%/Contents/PlugIns/$WIDGET_NAME.appex}"
+  pluginkit -r "$stale_widget_path" >/dev/null 2>&1 || true
+  "$LSREGISTER" -u "$stale_app_path" >/dev/null 2>&1 || true
+done < <(find "$ROOT_DIR/.build" -path "*/$APP_NAME.app/Contents/PlugIns/$WIDGET_NAME.appex" -type d 2>/dev/null)
+
+pluginkit -r "$PRODUCT_WIDGET_PATH" >/dev/null 2>&1 || true
+"$LSREGISTER" -u "$PRODUCT_APP_PATH" >/dev/null 2>&1 || true
+if [[ -d "$RELEASE_PRODUCT_BUNDLE_PATH" ]]; then
+  pluginkit -r "$RELEASE_PRODUCT_WIDGET_PATH" >/dev/null 2>&1 || true
+  "$LSREGISTER" -u "$RELEASE_PRODUCT_BUNDLE_PATH" >/dev/null 2>&1 || true
+fi
+
+if [[ -d "$WIDGET_BUNDLE_PATH" ]]; then
+  pluginkit -r "$WIDGET_BUNDLE_PATH" >/dev/null 2>&1 || true
+fi
+if [[ -d "$BUNDLE_PATH" ]]; then
+  "$LSREGISTER" -u "$BUNDLE_PATH" >/dev/null 2>&1 || true
+fi
+if [[ "$INSTALL" == true && -d "$STALE_DIST_BUNDLE_PATH" ]]; then
+  pluginkit -r "$STALE_DIST_WIDGET_PATH" >/dev/null 2>&1 || true
+  "$LSREGISTER" -u "$STALE_DIST_BUNDLE_PATH" >/dev/null 2>&1 || true
+  rm -rf "$STALE_DIST_BUNDLE_PATH"
+fi
 
 rm -rf "$BUNDLE_PATH"
-rm -rf "$ICONSET_PATH"
-mkdir -p "$BUNDLE_PATH/Contents/MacOS" "$RESOURCES_PATH" "$ICONSET_PATH"
+mkdir -p "$(dirname "$BUNDLE_PATH")"
+COPYFILE_DISABLE=1 ditto --norsrc "$PRODUCT_APP_PATH" "$BUNDLE_PATH"
+xattr -cr "$BUNDLE_PATH"
 
-cp ".build/debug/$APP_NAME" "$EXECUTABLE_PATH"
-chmod +x "$EXECUTABLE_PATH"
-
-sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_16x16.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_16x16@2x.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_32x32.png" >/dev/null
-sips -z 64 64 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_32x32@2x.png" >/dev/null
-sips -z 128 128 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_128x128.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_128x128@2x.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_256x256.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_256x256@2x.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_512x512.png" >/dev/null
-sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_PATH/icon_512x512@2x.png" >/dev/null
-python3 "$ROOT_DIR/scripts/make-icns.py" "$ICONSET_PATH" "$RESOURCES_PATH/AppIcon.icns"
-
-cat > "$BUNDLE_PATH/Contents/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleExecutable</key>
-  <string>$APP_NAME</string>
-  <key>CFBundleIdentifier</key>
-  <string>$BUNDLE_ID</string>
-  <key>CFBundleName</key>
-  <string>$APP_NAME</string>
-  <key>CFBundlePackageType</key>
-  <string>APPL</string>
-  <key>CFBundleIconFile</key>
-  <string>AppIcon</string>
-  <key>LSMinimumSystemVersion</key>
-  <string>14.0</string>
-  <key>NSHighResolutionCapable</key>
-  <true/>
-  <key>NSLocationUsageDescription</key>
-  <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
-  <key>NSLocationWhenInUseUsageDescription</key>
-  <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
-  <key>NSPrincipalClass</key>
-  <string>NSApplication</string>
-</dict>
-</plist>
-PLIST
+codesign --verify --deep --strict --verbose=2 "$BUNDLE_PATH"
+"$LSREGISTER" -f -R -trusted "$BUNDLE_PATH" >/dev/null 2>&1 || true
+pluginkit -a "$WIDGET_BUNDLE_PATH" >/dev/null 2>&1 || true
+pluginkit -e use -i "$WIDGET_BUNDLE_ID" >/dev/null 2>&1 || true
 
 if [[ ${#APP_ARGS[@]} -gt 0 ]]; then
   /usr/bin/open -n "$BUNDLE_PATH" --args "${APP_ARGS[@]}"
@@ -87,4 +112,5 @@ fi
 if [[ "$VERIFY" == true ]]; then
   sleep 1
   /usr/bin/pgrep -x "$APP_NAME" >/dev/null
+  pluginkit -m -A -D -vvv -p com.apple.widgetkit-extension | grep -F "Path = $WIDGET_BUNDLE_PATH" >/dev/null
 fi

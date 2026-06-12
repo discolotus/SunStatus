@@ -1,0 +1,586 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		040F5650D42C98F175EED381 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAEDA27B8069810F53E0AD7 /* WeatherSnapshot.swift */; };
+		05BE53D8E93CCF023DE8E5B5 /* SolarArcView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAE225B42D1E5345F18F764 /* SolarArcView.swift */; };
+		0735D0ED92BAB327C14CB1E5 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10573507A4CAEC4A56C54B5 /* WeatherService.swift */; };
+		200086F77226ABF88894DDE5 /* SolarDaylightProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE722A192775291C4F523027 /* SolarDaylightProvider.swift */; };
+		3312EBCF92115332611DACF3 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAEDA27B8069810F53E0AD7 /* WeatherSnapshot.swift */; };
+		366DBAC4E28A0A020849D2EB /* MockDaylightProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD5A7AF42DA491748F00AD01 /* MockDaylightProvider.swift */; };
+		382D964D04623BF0D64F8F33 /* SunPathGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59028319DCF63638C8BDAF6 /* SunPathGeometry.swift */; };
+		458F969FC7A6134985A2E829 /* SolarDaylightProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE722A192775291C4F523027 /* SolarDaylightProvider.swift */; };
+		4742316D9F730D723FD5FD90 /* SunStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309B061D4C26C7BB645BFA77 /* SunStatusWidget.swift */; };
+		49213EAEDD3BF945AB6A3EBE /* SolarArcView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAE225B42D1E5345F18F764 /* SolarArcView.swift */; };
+		49A252016D7829537C298FB0 /* MenuBarStatusLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791819FFC3C78E4CFFE5ADE7 /* MenuBarStatusLabel.swift */; };
+		4AED3010FF909FE00CB4F381 /* SunStatusWidgetCanvasPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE54237A7EC88431EE76FDF /* SunStatusWidgetCanvasPreview.swift */; };
+		4B581FCBEB1DBE2D81B86B35 /* SunStatusWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 98CEF64DA4848529F6694154 /* SunStatusWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4B6BCBCDE481CC865268143F /* SunMapKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7F3A32C725CFBCDBD0467A /* SunMapKitView.swift */; };
+		4C53F822478781A893E6BAC8 /* SolarArcGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55FF9D5E8F22D5AE7B99AFA /* SolarArcGeometry.swift */; };
+		585BFFDFC5548555841C70ED /* SunMapKitGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB24893A86D004F3618E6A9 /* SunMapKitGeometry.swift */; };
+		59AB13059E5B7CD65080BA87 /* SunArcProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56961B4479F8CCA06715DE7B /* SunArcProjection.swift */; };
+		5B57105B65C319B0D8AF0C52 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3108908559B218F58E60AAE5 /* StatusBarController.swift */; };
+		5F3367382FBF3D5E129BE33A /* SunStatusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866DC1762CDE67D3A7E2AA17 /* SunStatusApp.swift */; };
+		6D678B236FA21E2011598951 /* SolarArcGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55FF9D5E8F22D5AE7B99AFA /* SolarArcGeometry.swift */; };
+		72B27B99CF1AEE951A32EE7A /* SunPathGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59028319DCF63638C8BDAF6 /* SunPathGeometry.swift */; };
+		7B3F351DBD40FEA79AE5691E /* DaylightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A593A4E8CA2FB48F838979 /* DaylightModels.swift */; };
+		7CA74BB8F8F4351C726E49A4 /* MockDaylightProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD5A7AF42DA491748F00AD01 /* MockDaylightProvider.swift */; };
+		83FA8A9BB4FE63DD574D5FB4 /* SunMapKitContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8010B199C13BE0DDAE880C /* SunMapKitContainerView.swift */; };
+		AEF67FD5F87A84B5ED63E767 /* LocationAwareDaylightProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37DB3D3BE2E8623E818B16A0 /* LocationAwareDaylightProvider.swift */; };
+		B036CA8F237F72832BD0A212 /* SunMapKitArcOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0464F984AEC927809CB4072 /* SunMapKitArcOverlayView.swift */; };
+		BADA43C6EB17AFEB96E46988 /* DaylightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A593A4E8CA2FB48F838979 /* DaylightModels.swift */; };
+		C4A9779EACA925BAE206D189 /* SolarPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20F7108B4D2DCA749150612 /* SolarPosition.swift */; };
+		D5434B5FB9C4A7FB522BE661 /* SunStatusPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FC3FC189AFBA45B906F46D /* SunStatusPopoverView.swift */; };
+		E73496934D677EA7EA8110AD /* SolarPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20F7108B4D2DCA749150612 /* SolarPosition.swift */; };
+		E82EFB0998C890F398C22EE7 /* SunStatusWindowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D495351F605DAECAC56C3AFF /* SunStatusWindowViews.swift */; };
+		E9E5E4E5EA2BB691AFBBF87F /* SunPath3DPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B44EB5C2851DE25928114319 /* SunPath3DPanel.swift */; };
+		EFA0225225BF7CAE4449FAB7 /* SunArcProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56961B4479F8CCA06715DE7B /* SunArcProjection.swift */; };
+		F1D2E646FDDFBCF93A400F22 /* SunMapKitOverlayFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C15F81A60EACC4FA3E017CD /* SunMapKitOverlayFactory.swift */; };
+		F77B5ABD5A38E1E3096E7AD6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E3A126E29077FEADD7E91F /* SettingsView.swift */; };
+		FBC36CE7FB15841C1EB1FD90 /* SupportLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3685AFC4AB762FD3F173C6 /* SupportLinks.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		93020A7107026F1AAF401410 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B3BD285C17A212E4198110D1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BF5B2DD1EBC46AC3EE424F7D;
+			remoteInfo = SunStatusWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		02D4ACBCF7A866D7591DA4FF /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4B581FCBEB1DBE2D81B86B35 /* SunStatusWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2C15F81A60EACC4FA3E017CD /* SunMapKitOverlayFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitOverlayFactory.swift; sourceTree = "<group>"; };
+		309B061D4C26C7BB645BFA77 /* SunStatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusWidget.swift; sourceTree = "<group>"; };
+		3108908559B218F58E60AAE5 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		37DB3D3BE2E8623E818B16A0 /* LocationAwareDaylightProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAwareDaylightProvider.swift; sourceTree = "<group>"; };
+		3F8010B199C13BE0DDAE880C /* SunMapKitContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitContainerView.swift; sourceTree = "<group>"; };
+		3FAE225B42D1E5345F18F764 /* SolarArcView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarArcView.swift; sourceTree = "<group>"; };
+		4C3685AFC4AB762FD3F173C6 /* SupportLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportLinks.swift; sourceTree = "<group>"; };
+		56961B4479F8CCA06715DE7B /* SunArcProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunArcProjection.swift; sourceTree = "<group>"; };
+		5CB24893A86D004F3618E6A9 /* SunMapKitGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitGeometry.swift; sourceTree = "<group>"; };
+		64A593A4E8CA2FB48F838979 /* DaylightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaylightModels.swift; sourceTree = "<group>"; };
+		6F7F3A32C725CFBCDBD0467A /* SunMapKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitView.swift; sourceTree = "<group>"; };
+		791819FFC3C78E4CFFE5ADE7 /* MenuBarStatusLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusLabel.swift; sourceTree = "<group>"; };
+		866DC1762CDE67D3A7E2AA17 /* SunStatusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusApp.swift; sourceTree = "<group>"; };
+		98CEF64DA4848529F6694154 /* SunStatusWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SunStatusWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10573507A4CAEC4A56C54B5 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
+		B44EB5C2851DE25928114319 /* SunPath3DPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunPath3DPanel.swift; sourceTree = "<group>"; };
+		C0464F984AEC927809CB4072 /* SunMapKitArcOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitArcOverlayView.swift; sourceTree = "<group>"; };
+		C5FC3FC189AFBA45B906F46D /* SunStatusPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusPopoverView.swift; sourceTree = "<group>"; };
+		CEE54237A7EC88431EE76FDF /* SunStatusWidgetCanvasPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusWidgetCanvasPreview.swift; sourceTree = "<group>"; };
+		D495351F605DAECAC56C3AFF /* SunStatusWindowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusWindowViews.swift; sourceTree = "<group>"; };
+		D8E3A126E29077FEADD7E91F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D8E8F784329263596E255FDB /* SunStatus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SunStatus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE722A192775291C4F523027 /* SolarDaylightProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarDaylightProvider.swift; sourceTree = "<group>"; };
+		E20F7108B4D2DCA749150612 /* SolarPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarPosition.swift; sourceTree = "<group>"; };
+		E55FF9D5E8F22D5AE7B99AFA /* SolarArcGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarArcGeometry.swift; sourceTree = "<group>"; };
+		F59028319DCF63638C8BDAF6 /* SunPathGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunPathGeometry.swift; sourceTree = "<group>"; };
+		FBAEDA27B8069810F53E0AD7 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
+		FD5A7AF42DA491748F00AD01 /* MockDaylightProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDaylightProvider.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2F06231440110238095DE599 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				791819FFC3C78E4CFFE5ADE7 /* MenuBarStatusLabel.swift */,
+				D8E3A126E29077FEADD7E91F /* SettingsView.swift */,
+				C0464F984AEC927809CB4072 /* SunMapKitArcOverlayView.swift */,
+				3F8010B199C13BE0DDAE880C /* SunMapKitContainerView.swift */,
+				5CB24893A86D004F3618E6A9 /* SunMapKitGeometry.swift */,
+				2C15F81A60EACC4FA3E017CD /* SunMapKitOverlayFactory.swift */,
+				6F7F3A32C725CFBCDBD0467A /* SunMapKitView.swift */,
+				B44EB5C2851DE25928114319 /* SunPath3DPanel.swift */,
+				C5FC3FC189AFBA45B906F46D /* SunStatusPopoverView.swift */,
+				CEE54237A7EC88431EE76FDF /* SunStatusWidgetCanvasPreview.swift */,
+				D495351F605DAECAC56C3AFF /* SunStatusWindowViews.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		642DA02B0A591C63546096BF /* SunStatusCore */ = {
+			isa = PBXGroup;
+			children = (
+				64A593A4E8CA2FB48F838979 /* DaylightModels.swift */,
+				FD5A7AF42DA491748F00AD01 /* MockDaylightProvider.swift */,
+				DE722A192775291C4F523027 /* SolarDaylightProvider.swift */,
+				E20F7108B4D2DCA749150612 /* SolarPosition.swift */,
+				56961B4479F8CCA06715DE7B /* SunArcProjection.swift */,
+				F59028319DCF63638C8BDAF6 /* SunPathGeometry.swift */,
+				FBAEDA27B8069810F53E0AD7 /* WeatherSnapshot.swift */,
+			);
+			path = SunStatusCore;
+			sourceTree = "<group>";
+		};
+		96D0E59E8039AF2D3BEF5E2E /* SunStatus */ = {
+			isa = PBXGroup;
+			children = (
+				37DB3D3BE2E8623E818B16A0 /* LocationAwareDaylightProvider.swift */,
+				3108908559B218F58E60AAE5 /* StatusBarController.swift */,
+				866DC1762CDE67D3A7E2AA17 /* SunStatusApp.swift */,
+				4C3685AFC4AB762FD3F173C6 /* SupportLinks.swift */,
+				A10573507A4CAEC4A56C54B5 /* WeatherService.swift */,
+				2F06231440110238095DE599 /* Views */,
+			);
+			path = SunStatus;
+			sourceTree = "<group>";
+		};
+		AC0BA71525A6831CFDBF7B94 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D8E8F784329263596E255FDB /* SunStatus.app */,
+				98CEF64DA4848529F6694154 /* SunStatusWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CAA9CF08D9DEDC1D8C7065C2 = {
+			isa = PBXGroup;
+			children = (
+				EF6FD37D13E2287776E01581 /* Sources */,
+				AC0BA71525A6831CFDBF7B94 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E1FEFD81D0DE81A668850739 /* SunStatusUI */ = {
+			isa = PBXGroup;
+			children = (
+				E55FF9D5E8F22D5AE7B99AFA /* SolarArcGeometry.swift */,
+				3FAE225B42D1E5345F18F764 /* SolarArcView.swift */,
+			);
+			path = SunStatusUI;
+			sourceTree = "<group>";
+		};
+		E2BE10CCE9D0F72980863337 /* SunStatusWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				309B061D4C26C7BB645BFA77 /* SunStatusWidget.swift */,
+			);
+			path = SunStatusWidgetExtension;
+			sourceTree = "<group>";
+		};
+		EF6FD37D13E2287776E01581 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				96D0E59E8039AF2D3BEF5E2E /* SunStatus */,
+				642DA02B0A591C63546096BF /* SunStatusCore */,
+				E1FEFD81D0DE81A668850739 /* SunStatusUI */,
+				E2BE10CCE9D0F72980863337 /* SunStatusWidgetExtension */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BF5B2DD1EBC46AC3EE424F7D /* SunStatusWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C7B39FAD4C8015A5535D471E /* Build configuration list for PBXNativeTarget "SunStatusWidgetExtension" */;
+			buildPhases = (
+				69DB2487DA423A150C1BB269 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SunStatusWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SunStatusWidgetExtension;
+			productReference = 98CEF64DA4848529F6694154 /* SunStatusWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C1B0A590C46315FA56F9A99C /* SunStatus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11A702B899F1F993EBE62BBE /* Build configuration list for PBXNativeTarget "SunStatus" */;
+			buildPhases = (
+				5B70DC384177E546F3FBB4D4 /* Sources */,
+				832C1633A689333F289A05E0 /* Generate App Icon */,
+				02D4ACBCF7A866D7591DA4FF /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C5C85A3654195F59573962FF /* PBXTargetDependency */,
+			);
+			name = SunStatus;
+			packageProductDependencies = (
+			);
+			productName = SunStatus;
+			productReference = D8E8F784329263596E255FDB /* SunStatus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B3BD285C17A212E4198110D1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					BF5B2DD1EBC46AC3EE424F7D = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					C1B0A590C46315FA56F9A99C = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = A5888D99EF57BC7D51BF20C7 /* Build configuration list for PBXProject "SunStatus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = CAA9CF08D9DEDC1D8C7065C2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AC0BA71525A6831CFDBF7B94 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C1B0A590C46315FA56F9A99C /* SunStatus */,
+				BF5B2DD1EBC46AC3EE424F7D /* SunStatusWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		832C1633A689333F289A05E0 /* Generate App Icon */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate App Icon";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nicon_source=\"${SRCROOT}/Assets/AppIcon.png\"\niconset_path=\"${DERIVED_FILE_DIR}/AppIcon.iconset\"\noutput_path=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AppIcon.icns\"\nrm -rf \"$iconset_path\"\nmkdir -p \"$iconset_path\" \"$(dirname \"$output_path\")\"\nsips -z 16 16 \"$icon_source\" --out \"$iconset_path/icon_16x16.png\" >/dev/null\nsips -z 32 32 \"$icon_source\" --out \"$iconset_path/icon_16x16@2x.png\" >/dev/null\nsips -z 32 32 \"$icon_source\" --out \"$iconset_path/icon_32x32.png\" >/dev/null\nsips -z 64 64 \"$icon_source\" --out \"$iconset_path/icon_32x32@2x.png\" >/dev/null\nsips -z 128 128 \"$icon_source\" --out \"$iconset_path/icon_128x128.png\" >/dev/null\nsips -z 256 256 \"$icon_source\" --out \"$iconset_path/icon_128x128@2x.png\" >/dev/null\nsips -z 256 256 \"$icon_source\" --out \"$iconset_path/icon_256x256.png\" >/dev/null\nsips -z 512 512 \"$icon_source\" --out \"$iconset_path/icon_256x256@2x.png\" >/dev/null\nsips -z 512 512 \"$icon_source\" --out \"$iconset_path/icon_512x512.png\" >/dev/null\nsips -z 1024 1024 \"$icon_source\" --out \"$iconset_path/icon_512x512@2x.png\" >/dev/null\npython3 \"${SRCROOT}/scripts/make-icns.py\" \"$iconset_path\" \"$output_path\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5B70DC384177E546F3FBB4D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7B3F351DBD40FEA79AE5691E /* DaylightModels.swift in Sources */,
+				AEF67FD5F87A84B5ED63E767 /* LocationAwareDaylightProvider.swift in Sources */,
+				49A252016D7829537C298FB0 /* MenuBarStatusLabel.swift in Sources */,
+				366DBAC4E28A0A020849D2EB /* MockDaylightProvider.swift in Sources */,
+				F77B5ABD5A38E1E3096E7AD6 /* SettingsView.swift in Sources */,
+				6D678B236FA21E2011598951 /* SolarArcGeometry.swift in Sources */,
+				05BE53D8E93CCF023DE8E5B5 /* SolarArcView.swift in Sources */,
+				200086F77226ABF88894DDE5 /* SolarDaylightProvider.swift in Sources */,
+				E73496934D677EA7EA8110AD /* SolarPosition.swift in Sources */,
+				5B57105B65C319B0D8AF0C52 /* StatusBarController.swift in Sources */,
+				59AB13059E5B7CD65080BA87 /* SunArcProjection.swift in Sources */,
+				B036CA8F237F72832BD0A212 /* SunMapKitArcOverlayView.swift in Sources */,
+				83FA8A9BB4FE63DD574D5FB4 /* SunMapKitContainerView.swift in Sources */,
+				585BFFDFC5548555841C70ED /* SunMapKitGeometry.swift in Sources */,
+				F1D2E646FDDFBCF93A400F22 /* SunMapKitOverlayFactory.swift in Sources */,
+				4B6BCBCDE481CC865268143F /* SunMapKitView.swift in Sources */,
+				E9E5E4E5EA2BB691AFBBF87F /* SunPath3DPanel.swift in Sources */,
+				72B27B99CF1AEE951A32EE7A /* SunPathGeometry.swift in Sources */,
+				5F3367382FBF3D5E129BE33A /* SunStatusApp.swift in Sources */,
+				D5434B5FB9C4A7FB522BE661 /* SunStatusPopoverView.swift in Sources */,
+				4AED3010FF909FE00CB4F381 /* SunStatusWidgetCanvasPreview.swift in Sources */,
+				E82EFB0998C890F398C22EE7 /* SunStatusWindowViews.swift in Sources */,
+				FBC36CE7FB15841C1EB1FD90 /* SupportLinks.swift in Sources */,
+				0735D0ED92BAB327C14CB1E5 /* WeatherService.swift in Sources */,
+				3312EBCF92115332611DACF3 /* WeatherSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DB2487DA423A150C1BB269 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BADA43C6EB17AFEB96E46988 /* DaylightModels.swift in Sources */,
+				7CA74BB8F8F4351C726E49A4 /* MockDaylightProvider.swift in Sources */,
+				4C53F822478781A893E6BAC8 /* SolarArcGeometry.swift in Sources */,
+				49213EAEDD3BF945AB6A3EBE /* SolarArcView.swift in Sources */,
+				458F969FC7A6134985A2E829 /* SolarDaylightProvider.swift in Sources */,
+				C4A9779EACA925BAE206D189 /* SolarPosition.swift in Sources */,
+				EFA0225225BF7CAE4449FAB7 /* SunArcProjection.swift in Sources */,
+				382D964D04623BF0D64F8F33 /* SunPathGeometry.swift in Sources */,
+				4742316D9F730D723FD5FD90 /* SunStatusWidget.swift in Sources */,
+				040F5650D42C98F175EED381 /* WeatherSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C5C85A3654195F59573962FF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BF5B2DD1EBC46AC3EE424F7D /* SunStatusWidgetExtension */;
+			targetProxy = 93020A7107026F1AAF401410 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4C30F4A1511B7A9E3EC1D2C8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/SunStatusWidgetExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.4.1;
+				INFOPLIST_FILE = "Config/SunStatusWidgetExtension-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.discolotus.SunStatus.WidgetExtension;
+				PRODUCT_NAME = SunStatusWidgetExtension;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		928C056D913B23AABA548119 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Config/SunStatus.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.4.1;
+				INFOPLIST_FILE = "Config/SunStatus-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.discolotus.SunStatus;
+				PRODUCT_NAME = SunStatus;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		944843B31D6DFC7A4A71CF3D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		ADDF70F8BAAFC537B08C7023 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/SunStatusWidgetExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.4.1;
+				INFOPLIST_FILE = "Config/SunStatusWidgetExtension-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.discolotus.SunStatus.WidgetExtension;
+				PRODUCT_NAME = SunStatusWidgetExtension;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D865B36438F08818BAE7E340 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		DB9E3263A2396651028FD092 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Config/SunStatus.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.4.1;
+				INFOPLIST_FILE = "Config/SunStatus-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.discolotus.SunStatus;
+				PRODUCT_NAME = SunStatus;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		11A702B899F1F993EBE62BBE /* Build configuration list for PBXNativeTarget "SunStatus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				928C056D913B23AABA548119 /* Debug */,
+				DB9E3263A2396651028FD092 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A5888D99EF57BC7D51BF20C7 /* Build configuration list for PBXProject "SunStatus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				944843B31D6DFC7A4A71CF3D /* Debug */,
+				D865B36438F08818BAE7E340 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C7B39FAD4C8015A5535D471E /* Build configuration list for PBXNativeTarget "SunStatusWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADDF70F8BAAFC537B08C7023 /* Debug */,
+				4C30F4A1511B7A9E3EC1D2C8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B3BD285C17A212E4198110D1 /* Project object */;
+}
