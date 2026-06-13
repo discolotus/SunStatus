@@ -7,15 +7,15 @@ import SunStatusUI
 #endif
 
 #if DEBUG
-private enum WidgetCanvasFamily {
+private enum NightWidgetCanvasFamily {
     case small
     case medium
     case large
 }
 
-private struct SunStatusWidgetCanvasPreview: View {
+private struct SunStatusWidgetNightCanvasPreview: View {
     let status: DaylightStatus
-    let family: WidgetCanvasFamily
+    let family: NightWidgetCanvasFamily
 
     var body: some View {
         Group {
@@ -250,24 +250,24 @@ private struct SunStatusWidgetCanvasPreview: View {
     }
 }
 
-private enum SunStatusWidgetCanvasPreviewData {
-    static var morningStatus: DaylightStatus {
-        status(hour: 9, minute: 15)
+private enum SunStatusWidgetNightCanvasPreviewData {
+    static var lateEveningStatus: DaylightStatus {
+        mockStatus(hour: 22, minute: 15)
     }
 
-    static var noonStatus: DaylightStatus {
-        status(hour: 13, minute: 10)
+    static var deepNightStatus: DaylightStatus {
+        mockStatus(hour: 2, minute: 30)
     }
 
-    static var eveningStatus: DaylightStatus {
-        status(hour: 19, minute: 35)
+    static var preDawnStatus: DaylightStatus {
+        mockStatus(hour: 5, minute: 20)
     }
 
     static var cloudShiftStatus: DaylightStatus {
-        SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+        SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus(hour: 22, minute: 15)
     }
 
-    private static func status(hour: Int, minute: Int) -> DaylightStatus {
+    private static func mockStatus(hour: Int, minute: Int) -> DaylightStatus {
         let timezone = TimeZone(identifier: "America/Los_Angeles") ?? .current
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
@@ -279,39 +279,34 @@ private enum SunStatusWidgetCanvasPreviewData {
         components.minute = minute
 
         let date = components.date ?? .now
-        return SolarDaylightProvider(
-            locationName: "San Francisco",
-            coordinate: Coordinate(latitude: 37.7749, longitude: -122.4194),
-            timezone: timezone
-        )
-        .status(at: date)
+        return MockDaylightProvider(timezone: timezone).status(at: date)
     }
 }
 
-#Preview("Widget Small Canvas", traits: .sizeThatFitsLayout) {
-    SunStatusWidgetCanvasPreview(
-        status: SunStatusWidgetCanvasPreviewData.morningStatus,
+#Preview("Widget Night Small Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusWidgetNightCanvasPreview(
+        status: SunStatusWidgetNightCanvasPreviewData.lateEveningStatus,
         family: .small
     )
 }
 
-#Preview("Widget Medium Canvas", traits: .sizeThatFitsLayout) {
-    SunStatusWidgetCanvasPreview(
-        status: SunStatusWidgetCanvasPreviewData.noonStatus,
+#Preview("Widget Night Medium Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusWidgetNightCanvasPreview(
+        status: SunStatusWidgetNightCanvasPreviewData.deepNightStatus,
         family: .medium
     )
 }
 
-#Preview("Widget Large Canvas", traits: .sizeThatFitsLayout) {
-    SunStatusWidgetCanvasPreview(
-        status: SunStatusWidgetCanvasPreviewData.eveningStatus,
+#Preview("Widget Night Large Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusWidgetNightCanvasPreview(
+        status: SunStatusWidgetNightCanvasPreviewData.preDawnStatus,
         family: .large
     )
 }
 
-#Preview("Widget Cloud Shift Canvas", traits: .sizeThatFitsLayout) {
-    SunStatusWidgetCanvasPreview(
-        status: SunStatusWidgetCanvasPreviewData.cloudShiftStatus,
+#Preview("Widget Night Cloud Shift Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusWidgetNightCanvasPreview(
+        status: SunStatusWidgetNightCanvasPreviewData.cloudShiftStatus,
         family: .medium
     )
 }

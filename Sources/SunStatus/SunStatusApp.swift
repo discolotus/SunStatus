@@ -7,6 +7,10 @@ import SunStatusCore
 @main
 enum SunStatusMain {
     static func main() {
+        guard !AppDelegate.shouldActivateExistingInstanceAndExit else {
+            return
+        }
+
         let app = NSApplication.shared
         let delegate = AppDelegate()
         AppDelegate.shared = delegate
@@ -20,6 +24,8 @@ enum SunStatusMain {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     fileprivate static var shared: AppDelegate?
+    private static let showDockIconKey = "showDockIcon"
+    private static let cloudShiftArguments = ["--cloud-shift", "--demo-cloud-shift"]
 
     private var statusController: StatusBarController?
     private var settingsWindow: NSWindow?
@@ -43,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func showSettingsWindow() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 420),
+                contentRect: NSRect(x: 0, y: 0, width: 500, height: 560),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -51,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.title = "SunStatus Settings"
             window.center()
             window.contentViewController = NSHostingController(rootView: SettingsView())
-            window.setContentSize(NSSize(width: 420, height: 420))
+            window.setContentSize(NSSize(width: 500, height: 560))
             settingsWindow = window
         }
 
@@ -59,9 +65,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    static func setShowsDockIcon(_ showsDockIcon: Bool) {
+        NSApp.setActivationPolicy(showsDockIcon ? .regular : .accessory)
+
+        if showsDockIcon {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    fileprivate static var shouldActivateExistingInstanceAndExit: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard !arguments.contains("--allow-multiple-instances") else {
+            return false
+        }
+
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            return false
+        }
+
+        let currentProcessIdentifier = ProcessInfo.processInfo.processIdentifier
+        guard let existingApplication = NSRunningApplication
+            .runningApplications(withBundleIdentifier: bundleIdentifier)
+            .first(where: { $0.processIdentifier != currentProcessIdentifier && !$0.isTerminated })
+        else {
+            return false
+        }
+
+        existingApplication.activate(options: [])
+        return true
+    }
+
     fileprivate static var shouldUseRegularActivationPolicy: Bool {
         let arguments = ProcessInfo.processInfo.arguments
-        return arguments.contains("--pin")
+        return UserDefaults.standard.bool(forKey: showDockIconKey)
+            || arguments.contains("--pin")
             || arguments.contains("--window")
             || arguments.contains("--map")
             || arguments.contains("--expanded-map")
@@ -79,10 +116,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private static func makeProvider() -> DaylightProviding {
         let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains(where: cloudShiftArguments.contains) {
+            return CloudShiftDaylightProvider()
+        }
+
         if arguments.contains("--mock") || arguments.contains("--demo") {
             return MockDaylightProvider(locationName: "San Francisco")
         }
 
         return LocationAwareDaylightProvider()
+    }
+}
+
+private struct CloudShiftDaylightProvider: DaylightProviding {
+    func status(at _: Date) -> DaylightStatus {
+        SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
     }
 }

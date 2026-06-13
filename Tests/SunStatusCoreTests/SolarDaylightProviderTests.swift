@@ -36,6 +36,21 @@ final class SolarDaylightProviderTests: XCTestCase {
         XCTAssertEqual(status.brightness.classification, .dark)
     }
 
+    func testNightArcPointsAfterSunsetUseNextDaylightPath() throws {
+        let provider = SolarDaylightProvider()
+        let now = try XCTUnwrap(makeDate(hour: 23, minute: 0))
+
+        let status = provider.status(at: now)
+        let firstPoint = try XCTUnwrap(status.arcPoints.first)
+        let lastPoint = try XCTUnwrap(status.arcPoints.last)
+
+        XCTAssertNil(status.solar.daylightProgress)
+        XCTAssertGreaterThan(firstPoint.date, now)
+        XCTAssertGreaterThan(lastPoint.date, firstPoint.date)
+        XCTAssertEqual(firstPoint.progress, 0)
+        XCTAssertEqual(lastPoint.progress, 1)
+    }
+
     func testArcPointsCoverFullDaylightPath() throws {
         let provider = SolarDaylightProvider()
         let now = try XCTUnwrap(makeDate(hour: 12, minute: 0))

@@ -81,3 +81,51 @@ private struct MiniSolarArc: View {
         .frame(width: 28, height: 18)
     }
 }
+
+#if DEBUG
+private enum MenuBarStatusLabelPreviewData {
+    static var dayStatus: DaylightStatus {
+        status(hour: 13, minute: 20)
+    }
+
+    static var nightStatus: DaylightStatus {
+        status(hour: 22, minute: 15)
+    }
+
+    private static func status(hour: Int, minute: Int) -> DaylightStatus {
+        let timezone = TimeZone(identifier: "America/Los_Angeles") ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+
+        let date = calendar.date(from: DateComponents(
+            timeZone: timezone,
+            year: 2026,
+            month: 6,
+            day: 21,
+            hour: hour,
+            minute: minute
+        )) ?? Date(timeIntervalSince1970: 1_782_000_000)
+
+        return MockDaylightProvider(timezone: timezone).status(at: date)
+    }
+}
+
+#Preview("Menu Bar Label", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 10) {
+        MenuBarStatusLabel(status: MenuBarStatusLabelPreviewData.dayStatus)
+        MenuBarStatusLabel(status: MenuBarStatusLabelPreviewData.nightStatus)
+    }
+    .padding(12)
+    .background(.bar, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .padding(20)
+}
+
+#Preview("Mini Solar Arc", traits: .sizeThatFitsLayout) {
+    HStack(spacing: 16) {
+        MiniSolarArc(progress: 0.25)
+        MiniSolarArc(progress: 0.65)
+        MiniSolarArc(progress: nil)
+    }
+    .padding(20)
+}
+#endif
