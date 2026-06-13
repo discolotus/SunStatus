@@ -21,7 +21,8 @@ struct SunStatusPopoverView: View {
     }
 
     @State private var selectedPanel: PopoverPanel = .arc
-    @State private var arcPreviewProgress = 0.5
+    @State private var arcPreviewTimelineProgress = 0.5
+    @State private var isScrubbingArcPreview = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -38,7 +39,11 @@ struct SunStatusPopoverView: View {
 
             switch selectedPanel {
             case .arc:
-                SolarArcView(status: status, previewProgress: arcPreviewProgress)
+                SolarArcView(
+                    status: status,
+                    previewProgress: arcPreviewDaylightProgress,
+                    previewDate: arcPreviewDate
+                )
 
                 arcPreviewSlider
 
@@ -60,10 +65,14 @@ struct SunStatusPopoverView: View {
         .padding(14)
         .frame(width: 380, height: contentHeight, alignment: .topLeading)
         .onAppear {
-            arcPreviewProgress = status.solar.daylightProgress ?? 0.5
+            arcPreviewTimelineProgress = arcPreviewTimeline.currentProgress
         }
         .onChange(of: status.solar.date) { _, _ in
-            arcPreviewProgress = status.solar.daylightProgress ?? arcPreviewProgress
+            guard !isScrubbingArcPreview else {
+                return
+            }
+
+            arcPreviewTimelineProgress = arcPreviewTimeline.currentProgress
         }
     }
 
@@ -143,14 +152,18 @@ struct SunStatusPopoverView: View {
             }
             .font(.caption.weight(.medium))
 
-            Slider(value: $arcPreviewProgress, in: 0...1) {
-                Text("Preview time")
-            }
+            TimelineSlider(
+                progress: $arcPreviewTimelineProgress,
+                markers: arcPreviewSliderMarkers,
+                onEditingChanged: { isEditing in
+                    isScrubbingArcPreview = isEditing
+                }
+            )
 
             HStack {
-                Text(timeText(status.arcPoints.first?.date ?? status.solar.sunrise))
+                Text(timeText(arcPreviewTimeline.startDate))
                 Spacer()
-                Text(timeText(status.arcPoints.last?.date ?? status.solar.sunset))
+                Text(timeText(arcPreviewTimeline.endDate))
             }
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
@@ -186,7 +199,44 @@ struct SunStatusPopoverView: View {
     }
 
     private var arcPreviewSample: SunPathSample3D {
-        SunPathGeometry.sample(at: arcPreviewProgress, arcPoints: status.arcPoints, fallback: status.solar)
+        if let arcPreviewDaylightProgress {
+            return SunPathGeometry.sample(at: arcPreviewDaylightProgress, arcPoints: status.arcPoints, fallback: status.solar)
+        }
+
+        let position = SolarPositionCalculator.position(at: arcPreviewDate, coordinate: status.solar.location)
+        let cloudCover = status.brightness.cloudCover
+
+        return SunPathSample3D(
+            date: arcPreviewDate,
+            progress: arcPreviewTimelineProgress,
+            elevationDegrees: position.elevationDegrees,
+            azimuthDegrees: position.azimuthDegrees,
+            brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover),
+            cloudCover: cloudCover
+        )
+    }
+
+    private var arcPreviewTimeline: SunPathPreviewTimeline {
+        SunPathPreviewTimeline(status: status)
+    }
+
+    private var arcPreviewDate: Date {
+        arcPreviewTimeline.date(at: arcPreviewTimelineProgress)
+    }
+
+    private var arcPreviewDaylightProgress: Double? {
+        arcPreviewTimeline.daylightProgress(for: arcPreviewDate)
+    }
+
+    private var arcPreviewSliderMarkers: [TimelineSliderMarker] {
+        [
+            arcPreviewTimeline.daylightStartProgress.map {
+                TimelineSliderMarker(id: "sunrise", progress: $0, color: .orange.opacity(0.88))
+            },
+            arcPreviewTimeline.daylightEndProgress.map {
+                TimelineSliderMarker(id: "sunset", progress: $0, color: .secondary.opacity(0.55))
+            }
+        ].compactMap { $0 }
     }
 
     private var arcBrightnessScore: Double {
@@ -378,3 +428,111 @@ private struct MetricTile: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
+
+private struct TimelineSliderMarker: Identifiable {
+    let id: String
+    let progress: Double
+    let color: Color
+}
+
+private struct TimelineSlider: View {
+    @Binding var progress: Double
+    let markers: [TimelineSliderMarker]
+    var onEditingChanged: (Bool) -> Void = { _ in }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Slider(value: $progress, in: 0...1, onEditingChanged: onEditingChanged) {
+                Text("Preview time")
+            }
+            .labelsHidden()
+
+            GeometryReader { proxy in
+                ForEach(markers) { marker in
+                    Rectangle()
+                        .fill(marker.color)
+                        .frame(width: 2, height: 20)
+                        .clipShape(Capsule())
+                        .offset(x: markerOffset(for: marker.progress, width: proxy.size.width), y: 2)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .frame(height: 24)
+    }
+
+    private func markerOffset(for progress: Double, width: CGFloat) -> CGFloat {
+        let clampedProgress = min(max(progress, 0), 1)
+        return min(max((width * clampedProgress) - 1, 0), max(width - 2, 0))
+    }
+}
+
+#if DEBUG
+private enum SunStatusPopoverPreviewData {
+    static let cloudShiftStatus = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+
+    static var nightStatus: DaylightStatus {
+        let timezone = TimeZone(identifier: "America/Los_Angeles") ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+
+        let date = calendar.date(from: DateComponents(
+            timeZone: timezone,
+            year: 2026,
+            month: 6,
+            day: 21,
+            hour: 22,
+            minute: 15
+        )) ?? Date(timeIntervalSince1970: 1_782_025_000)
+
+        return MockDaylightProvider(timezone: timezone).status(at: date)
+    }
+}
+
+private struct TimelineSliderPreviewHost: View {
+    @State private var progress = 0.55
+
+    var body: some View {
+        TimelineSlider(
+            progress: $progress,
+            markers: [
+                TimelineSliderMarker(id: "sunrise", progress: 0.22, color: .orange),
+                TimelineSliderMarker(id: "sunset", progress: 0.78, color: .secondary)
+            ]
+        )
+        .frame(width: 300)
+        .padding(20)
+    }
+}
+
+#Preview("Popover - Cloud Shift", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverView(
+        status: SunStatusPopoverPreviewData.cloudShiftStatus,
+        contentHeight: 560,
+        onQuit: {}
+    )
+}
+
+#Preview("Popover - Night", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverView(
+        status: SunStatusPopoverPreviewData.nightStatus,
+        isPinned: true,
+        contentHeight: 560,
+        onQuit: {}
+    )
+}
+
+#Preview("Popover Metric Tiles", traits: .sizeThatFitsLayout) {
+    Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+        GridRow {
+            MetricTile(title: "Brightness", value: "82%", symbolName: "circle.lefthalf.filled")
+            MetricTile(title: "Clouds", value: "97%", symbolName: "cloud")
+        }
+    }
+    .padding(20)
+}
+
+#Preview("Timeline Slider", traits: .sizeThatFitsLayout) {
+    TimelineSliderPreviewHost()
+}
+#endif

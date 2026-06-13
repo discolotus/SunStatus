@@ -4,6 +4,29 @@ All notable changes to SunStatus will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added Settings controls for showing the app icon in the Dock while running and for using a manually entered location instead of automatic macOS location lookup.
+- Added manual location resolution for city, address, and coordinate input, with saved latitude, longitude, name, and timezone used across the menu bar, popover, windows, widgets, and weather.
+- Added app-target widget canvas previews for daytime, nighttime, and a simulated bright-morning/cloudy-afternoon scenario.
+- Added reusable preview fixtures and timeline helpers for cloud-shift, night-mode, and widget review states.
+- Added Xcode-visible test coverage for preview fixtures, preview timelines, mock daylight behavior, and solar daylight behavior.
+- Added Codex worktree setup notes and local environment actions for common build, test, and run workflows.
+
+### Changed
+
+- Changed the medium widget layout so status metrics sit on the left and the solar arc uses the right side of the widget.
+- Changed daytime widget arcs to use a proportional daylight span with sunrise and sunset guide lines, coloring only the in-day arc rather than the cropped night side.
+- Refined the solar arc cloud visualization with stronger cloud-blocked background contrast, smoother cloud transitions, and hidden cloud arcs when no meaningful cloud cover is present.
+- Expanded night-mode arc rendering and preview-time behavior so the slider can represent the full overnight timeline into the next sunrise.
+- Updated the app, widget extension, Xcode project, and scheme wiring so WidgetKit previews and tests are available from Xcode.
+
+### Fixed
+
+- Fixed menu bar popover refresh behavior around manual/current-location weather overrides.
+- Fixed sunrise guide placement in the preview-time slider by aligning it with the displayed overnight timeline.
+- Fixed app activation behavior for showing or hiding the Dock icon while SunStatus is running.
+
 ## [0.4.1] - 2026-06-12
 
 ### Added

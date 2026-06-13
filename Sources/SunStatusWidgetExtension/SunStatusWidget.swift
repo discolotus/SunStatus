@@ -223,7 +223,8 @@ struct SunStatusWidgetView: View {
             SolarArcView(
                 status: entry.status,
                 showsTimeLabels: false,
-                arcHeight: 66
+                arcHeight: 66,
+                daylightLayout: .proportional
             )
 
             Spacer(minLength: 0)
@@ -242,20 +243,27 @@ struct SunStatusWidgetView: View {
     }
 
     private var mediumContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            header(compact: false, showsLocation: true)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                header(compact: false, showsLocation: true)
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    WidgetStatRow(title: "Next", value: nextTransitionValue)
+                    WidgetStatRow(title: "Light", value: brightnessText)
+                    WidgetStatRow(title: "Elevation", value: degreesText(entry.status.solar.elevationDegrees))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
             SolarArcView(
                 status: entry.status,
-                showsTimeLabels: true,
-                arcHeight: 58
+                showsTimeLabels: false,
+                arcHeight: 108,
+                daylightLayout: .proportional
             )
-
-            HStack(alignment: .top, spacing: 12) {
-                WidgetMetric(title: "Next", value: nextTransitionValue)
-                WidgetMetric(title: "Light", value: brightnessText)
-                WidgetMetric(title: "Elevation", value: degreesText(entry.status.solar.elevationDegrees))
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
     }
 
@@ -266,7 +274,8 @@ struct SunStatusWidgetView: View {
             SolarArcView(
                 status: entry.status,
                 showsTimeLabels: true,
-                arcHeight: 126
+                arcHeight: 126,
+                daylightLayout: .proportional
             )
 
             HStack(alignment: .top, spacing: 12) {
@@ -411,6 +420,74 @@ private struct WidgetMetric: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+private struct WidgetStatRow: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+    }
+}
+
+#if DEBUG
+private enum SunStatusWidgetPreviewData {
+    static let cloudShiftStatus = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+    static let cloudShiftEntry = SunStatusWidgetEntry(
+        date: cloudShiftStatus.solar.date,
+        status: cloudShiftStatus
+    )
+}
+
+#Preview("Cloud Shift Small", as: .systemSmall) {
+    SunStatusWidget()
+} timeline: {
+    SunStatusWidgetPreviewData.cloudShiftEntry
+}
+
+#Preview("Cloud Shift Medium", as: .systemMedium) {
+    SunStatusWidget()
+} timeline: {
+    SunStatusWidgetPreviewData.cloudShiftEntry
+}
+
+#Preview("Cloud Shift Large", as: .systemLarge) {
+    SunStatusDetailWidget()
+} timeline: {
+    SunStatusWidgetPreviewData.cloudShiftEntry
+}
+
+#Preview("Widget View - Medium", traits: .sizeThatFitsLayout) {
+    SunStatusWidgetView(
+        entry: SunStatusWidgetPreviewData.cloudShiftEntry,
+        previewFamily: .systemMedium
+    )
+    .frame(width: 338, height: 158)
+    .padding(20)
+}
+
+#Preview("Widget Components", traits: .sizeThatFitsLayout) {
+    VStack(alignment: .leading, spacing: 10) {
+        WidgetMetric(title: "Daylight", value: "57%")
+        WidgetStatRow(title: "Clouds", value: "97%")
+    }
+    .frame(width: 180)
+    .padding(20)
+}
+#endif
 
 @main
 struct SunStatusWidgetBundle: WidgetBundle {
