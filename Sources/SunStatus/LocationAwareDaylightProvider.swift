@@ -1,6 +1,8 @@
 import CoreLocation
 import Foundation
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 protocol RefreshingDaylightProviding: AnyObject, DaylightProviding {
     var onStatusChanged: (@Sendable () -> Void)? { get set }

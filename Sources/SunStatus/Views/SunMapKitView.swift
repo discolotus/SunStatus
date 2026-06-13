@@ -1,7 +1,9 @@
 import AppKit
 import MapKit
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 struct SunMapKitView: NSViewRepresentable {
     let centerCoordinate: Coordinate

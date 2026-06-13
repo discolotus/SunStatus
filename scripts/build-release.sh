@@ -1,88 +1,53 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-0.4.0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="$("$ROOT_DIR/scripts/resolve-release-version.sh" "${1:-}")"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="SunStatus"
-APP_DIR="$BUILD_DIR/$APP_NAME.app"
-CONTENTS_DIR="$APP_DIR/Contents"
-MACOS_DIR="$CONTENTS_DIR/MacOS"
-RESOURCES_DIR="$CONTENTS_DIR/Resources"
-MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
-SWIFTPM_BUILD_DIR="$BUILD_DIR/swiftpm"
-ICON_SOURCE="$ROOT_DIR/Assets/AppIcon.png"
-ICONSET_DIR="$BUILD_DIR/AppIcon.iconset"
+WIDGET_NAME="SunStatusWidgetExtension"
+PROJECT_PATH="$ROOT_DIR/$APP_NAME.xcodeproj"
+SCHEME="$APP_NAME"
+HOST_ARCH="$(uname -m)"
+DERIVED_DATA_DIR="$BUILD_DIR/xcode-derived-data"
+PRODUCTS_DIR="$BUILD_DIR/products"
+APP_DIR="$PRODUCTS_DIR/$APP_NAME.app"
+WIDGET_DIR="$APP_DIR/Contents/PlugIns/$WIDGET_NAME.appex"
 ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
 DMG_STAGING_DIR="$BUILD_DIR/dmg-staging"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
-DEPLOYMENT_TARGET="14.0"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$MODULE_CACHE_DIR" "$ICONSET_DIR"
-export CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
-export SWIFT_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
+mkdir -p "$BUILD_DIR"
 
-cat > "$CONTENTS_DIR/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleExecutable</key>
-    <string>$APP_NAME</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.discolotus.SunStatus</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>CFBundleName</key>
-    <string>$APP_NAME</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>$VERSION</string>
-    <key>CFBundleVersion</key>
-    <string>$VERSION</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>$DEPLOYMENT_TARGET</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSLocationUsageDescription</key>
-    <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.</string>
-</dict>
-</plist>
-PLIST
+cd "$ROOT_DIR"
 
-swift build \
-    --configuration release \
-    --product "$APP_NAME" \
-    --build-path "$SWIFTPM_BUILD_DIR" \
-    -Xswiftc -module-cache-path \
-    -Xswiftc "$MODULE_CACHE_DIR"
+if command -v xcodegen >/dev/null 2>&1; then
+    xcodegen generate --quiet --spec "$ROOT_DIR/project.yml"
+elif [[ ! -d "$PROJECT_PATH" ]]; then
+    echo "SunStatus.xcodeproj is missing and xcodegen is not installed." >&2
+    exit 1
+fi
 
-cp "$SWIFTPM_BUILD_DIR/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
+xcodebuild \
+    -quiet \
+    -project "$PROJECT_PATH" \
+    -scheme "$SCHEME" \
+    -configuration Release \
+    -destination "platform=macOS,arch=$HOST_ARCH" \
+    -derivedDataPath "$DERIVED_DATA_DIR" \
+    CONFIGURATION_BUILD_DIR="$PRODUCTS_DIR" \
+    MARKETING_VERSION="$VERSION" \
+    CURRENT_PROJECT_VERSION="$VERSION" \
+    CODE_SIGN_IDENTITY=- \
+    CODE_SIGN_STYLE=Manual \
+    build
 
-sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_32x32.png" >/dev/null
-sips -z 64 64 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_32x32@2x.png" >/dev/null
-sips -z 128 128 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_128x128.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_128x128@2x.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256@2x.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
-sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
-python3 "$ROOT_DIR/scripts/make-icns.py" "$ICONSET_DIR" "$RESOURCES_DIR/AppIcon.icns"
+test -d "$APP_DIR"
+test -d "$WIDGET_DIR"
+test -f "$APP_DIR/Contents/Resources/AppIcon.icns"
 
-xattr -cr "$APP_DIR"
-codesign --force --sign - "$APP_DIR"
 xattr -cr "$APP_DIR"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 COPYFILE_DISABLE=1 ditto -c -k --keepParent --norsrc "$APP_DIR" "$ZIP_PATH"
@@ -138,3 +103,9 @@ echo "Built $ZIP_PATH"
 shasum -a 256 "$ZIP_PATH"
 echo "Built $DMG_PATH"
 shasum -a 256 "$DMG_PATH"
+
+while IFS= read -r stale_widget_path; do
+    stale_app_path="${stale_widget_path%%/Contents/PlugIns/$WIDGET_NAME.appex}"
+    pluginkit -r "$stale_widget_path" >/dev/null 2>&1 || true
+    "$LSREGISTER" -u "$stale_app_path" >/dev/null 2>&1 || true
+done < <(find "$ROOT_DIR/.build" -path "*/$APP_NAME.app/Contents/PlugIns/$WIDGET_NAME.appex" -type d 2>/dev/null)

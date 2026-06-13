@@ -1,7 +1,9 @@
 import AppKit
 import CoreLocation
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 @MainActor
 final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {

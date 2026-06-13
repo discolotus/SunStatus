@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 struct PinnedSunStatusWindowView: View {
     let status: DaylightStatus

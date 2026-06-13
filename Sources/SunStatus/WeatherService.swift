@@ -1,6 +1,8 @@
 import CoreLocation
 import Foundation
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 /// Fetches current weather from the Open-Meteo public API (no API key required) and
 /// caches the result for `cacheLifetime` seconds. A stale cached value is returned on

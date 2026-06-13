@@ -1,6 +1,8 @@
 import AppKit
 import MapKit
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 final class SunMapKitArcOverlayView: NSView {
     weak var mapView: MKMapView?

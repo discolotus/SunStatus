@@ -1,0 +1,140 @@
+name: SunStatus
+options:
+  minimumXcodeGenVersion: 2.45.4
+  createIntermediateGroups: true
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SDKROOT: macosx
+    SWIFT_VERSION: "6.0"
+targets:
+  SunStatus:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/SunStatus
+      - path: Sources/SunStatusCore
+      - path: Sources/SunStatusUI
+    dependencies:
+      - target: SunStatusWidgetExtension
+        embed: true
+    info:
+      path: Config/SunStatus-Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIconFile: AppIcon
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleSupportedPlatforms:
+          - MacOSX
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.weather
+        LSMinimumSystemVersion: "14.0"
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSLocationUsageDescription: SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.
+        NSLocationWhenInUseUsageDescription: SunStatus uses your location locally to center the 3D sun map and estimate daylight timing for where you are.
+    entitlements:
+      path: Config/SunStatus.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.personal-information.location: true
+    settings:
+      base:
+        COMBINE_HIDPI_IMAGES: YES
+        CURRENT_PROJECT_VERSION: "0.4.1"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        MARKETING_VERSION: "0.4.1"
+        PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatus
+        PRODUCT_NAME: SunStatus
+    postCompileScripts:
+      - name: Generate App Icon
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          icon_source="${SRCROOT}/Assets/AppIcon.png"
+          iconset_path="${DERIVED_FILE_DIR}/AppIcon.iconset"
+          output_path="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AppIcon.icns"
+          rm -rf "$iconset_path"
+          mkdir -p "$iconset_path" "$(dirname "$output_path")"
+          sips -z 16 16 "$icon_source" --out "$iconset_path/icon_16x16.png" >/dev/null
+          sips -z 32 32 "$icon_source" --out "$iconset_path/icon_16x16@2x.png" >/dev/null
+          sips -z 32 32 "$icon_source" --out "$iconset_path/icon_32x32.png" >/dev/null
+          sips -z 64 64 "$icon_source" --out "$iconset_path/icon_32x32@2x.png" >/dev/null
+          sips -z 128 128 "$icon_source" --out "$iconset_path/icon_128x128.png" >/dev/null
+          sips -z 256 256 "$icon_source" --out "$iconset_path/icon_128x128@2x.png" >/dev/null
+          sips -z 256 256 "$icon_source" --out "$iconset_path/icon_256x256.png" >/dev/null
+          sips -z 512 512 "$icon_source" --out "$iconset_path/icon_256x256@2x.png" >/dev/null
+          sips -z 512 512 "$icon_source" --out "$iconset_path/icon_512x512.png" >/dev/null
+          sips -z 1024 1024 "$icon_source" --out "$iconset_path/icon_512x512@2x.png" >/dev/null
+          python3 "${SRCROOT}/scripts/make-icns.py" "$iconset_path" "$output_path"
+  SunStatusWidgetExtension:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/SunStatusWidgetExtension
+      - path: Sources/SunStatusCore
+      - path: Sources/SunStatusUI
+    info:
+      path: Config/SunStatusWidgetExtension-Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        CFBundleDisplayName: SunStatus
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: XPC!
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleSupportedPlatforms:
+          - MacOSX
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: "14.0"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSLocationWhenInUseUsageDescription: SunStatus widgets use your location locally to estimate daylight timing for where you are.
+        NSWidgetWantsLocation: true
+    entitlements:
+      path: Config/SunStatusWidgetExtension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.personal-information.location: true
+    settings:
+      base:
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CURRENT_PROJECT_VERSION: "0.4.1"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+        MARKETING_VERSION: "0.4.1"
+        PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatus.WidgetExtension
+        PRODUCT_NAME: SunStatusWidgetExtension
+schemes:
+  SunStatus:
+    build:
+      targets:
+        SunStatus: all
+    run:
+      config: Debug
+      executable: SunStatus
+    profile:
+      config: Release
+      executable: SunStatus
+    analyze:
+      config: Debug
+    archive:
+      config: Release

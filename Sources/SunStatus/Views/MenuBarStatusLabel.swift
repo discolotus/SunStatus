@@ -1,5 +1,10 @@
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
+#if canImport(SunStatusUI)
+import SunStatusUI
+#endif
 
 struct MenuBarStatusLabel: View {
     let status: DaylightStatus

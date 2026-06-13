@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
+#if canImport(SunStatusCore)
 import SunStatusCore
+#endif
 
 @main
 enum SunStatusMain {

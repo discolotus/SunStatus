@@ -1,15 +1,19 @@
 import CoreGraphics
-import Foundation
 
-struct SolarArcGeometry {
-    let size: CGSize
-    let verticalOffset: CGFloat
+public struct SolarArcGeometry {
+    public let size: CGSize
+    public let verticalOffset: CGFloat
 
-    func point(at progress: Double) -> CGPoint {
+    public init(size: CGSize, verticalOffset: CGFloat) {
+        self.size = size
+        self.verticalOffset = verticalOffset
+    }
+
+    public func point(at progress: Double) -> CGPoint {
         point(at: progress, radiusScale: 1)
     }
 
-    func point(at progress: Double, radiusScale: CGFloat) -> CGPoint {
+    public func point(at progress: Double, radiusScale: CGFloat) -> CGPoint {
         let clampedProgress = min(max(progress, 0), 1)
         let clampedRadiusScale = min(max(radiusScale, 0), 1)
         let center = CGPoint(x: size.width / 2, y: size.height - verticalOffset)
@@ -23,7 +27,7 @@ struct SolarArcGeometry {
         )
     }
 
-    func points(from start: Double, through end: Double, steps: Int) -> [CGPoint] {
+    public func points(from start: Double, through end: Double, steps: Int) -> [CGPoint] {
         let clampedStart = min(max(start, 0), 1)
         let clampedEnd = min(max(end, 0), 1)
         let totalSteps = max(steps, 1)
