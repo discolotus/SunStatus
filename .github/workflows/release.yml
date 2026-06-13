@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example 0.4.0"
+        description: "Release version, for example 0.4.1"
         required: true
         type: string
       target_ref:
@@ -40,15 +40,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          parse_version() {
-            sed -nE 's/^VERSION="\$\{1:-([0-9]+\.[0-9]+\.[0-9]+)\}"$/\1/p' "$1" | head -1
-          }
-
-          script_version="$(parse_version scripts/build-release.sh)"
-          if [[ -z "$script_version" ]]; then
-            echo "Could not parse release version from scripts/build-release.sh" >&2
-            exit 1
-          fi
+          script_version="$(scripts/resolve-release-version.sh)"
 
           if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             release_version="${GITHUB_REF_NAME#v}"

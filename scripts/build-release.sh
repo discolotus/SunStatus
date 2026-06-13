@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-0.4.0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="$("$ROOT_DIR/scripts/resolve-release-version.sh" "${1:-}")"
 BUILD_DIR="$ROOT_DIR/.build/release"
 APP_NAME="SunStatus"
 WIDGET_NAME="SunStatusWidgetExtension"
