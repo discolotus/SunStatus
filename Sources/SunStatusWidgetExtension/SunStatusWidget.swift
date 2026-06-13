@@ -223,22 +223,9 @@ struct SunStatusWidgetView: View {
             SolarArcView(
                 status: entry.status,
                 showsTimeLabels: false,
-                arcHeight: 66,
+                arcHeight: 90,
                 daylightLayout: .proportional
             )
-
-            Spacer(minLength: 0)
-
-            Text(daylightProgressText)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-
-            Text(nextTransitionText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
         }
     }
 

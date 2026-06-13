@@ -16,6 +16,7 @@ public struct SolarArcView: View {
     private var arcHeight: CGFloat
     private var daylightLayout: SolarArcDaylightLayout
     private let cloudArcRadiusScale: CGFloat = 0.82
+    private let proportionalDayCloudArcRadiusScale: CGFloat = 0.72
     private let nightCloudArcRadiusScale: CGFloat = 0.72
 
     public init(
@@ -321,16 +322,16 @@ public struct SolarArcView: View {
                 continue
             }
 
-            drawCloudOcclusion(
+            drawDaylightCloudOcclusion(
                 in: context,
                 segment: proportionalCloudBlockedFanPath(
                     from: pair.0.progress,
                     through: pair.1.progress,
                     geometry: geometry,
-                    radiusScale: cloudArcRadiusScale
+                    radiusScale: proportionalDayCloudArcRadiusScale
                 ),
                 center: center,
-                radius: radius * cloudArcRadiusScale,
+                radius: radius * proportionalDayCloudArcRadiusScale,
                 cloudCover: cloudCover
             )
         }
@@ -369,8 +370,8 @@ public struct SolarArcView: View {
 
         for pair in zip(samples, samples.dropFirst()) {
             var segment = Path()
-            segment.move(to: geometry.point(at: pair.0.progress, radiusScale: cloudArcRadiusScale))
-            segment.addLine(to: geometry.point(at: pair.1.progress, radiusScale: cloudArcRadiusScale))
+            segment.move(to: geometry.point(at: pair.0.progress, radiusScale: proportionalDayCloudArcRadiusScale))
+            segment.addLine(to: geometry.point(at: pair.1.progress, radiusScale: proportionalDayCloudArcRadiusScale))
             let cloudCover = (pair.0.cloudCover + pair.1.cloudCover) / 2
             let featherOpacity = cloudFeatherOpacity(for: cloudCover)
             let opacity = cloudLineOpacity(for: cloudCover)
@@ -401,8 +402,8 @@ public struct SolarArcView: View {
             )
 
             var highlight = Path()
-            highlight.move(to: geometry.point(at: pair.0.progress, radiusScale: 0.78))
-            highlight.addLine(to: geometry.point(at: pair.1.progress, radiusScale: 0.78))
+            highlight.move(to: geometry.point(at: pair.0.progress, radiusScale: proportionalDayCloudArcRadiusScale - 0.04))
+            highlight.addLine(to: geometry.point(at: pair.1.progress, radiusScale: proportionalDayCloudArcRadiusScale - 0.04))
             context.stroke(
                 highlight,
                 with: .color(.white.opacity(0.10 * opacity)),
@@ -424,7 +425,7 @@ public struct SolarArcView: View {
 
     private func drawNightDisk(in context: GraphicsContext, size: CGSize) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        let radius = min(size.width * 0.30, size.height * 0.46)
+        let radius = min(size.width * 0.36, size.height * 0.48)
         let samples = status.arcPoints.sorted { $0.progress < $1.progress }
         let sunrise = samples.first?.date ?? status.solar.sunrise
         let sunset = samples.last?.date ?? status.solar.sunset
@@ -853,6 +854,44 @@ public struct SolarArcView: View {
                     .init(color: Color(red: 0.060, green: 0.054, blue: 0.040).opacity(midOpacity), location: 0.82),
                     .init(color: Color(red: 0.090, green: 0.070, blue: 0.040).opacity(boundaryOpacity), location: 0.96),
                     .init(color: Color(red: 0.030, green: 0.034, blue: 0.033).opacity(boundaryOpacity), location: 1)
+                ]),
+                center: center,
+                startRadius: 0,
+                endRadius: radius
+            )
+        )
+    }
+
+    private func drawDaylightCloudOcclusion(
+        in context: GraphicsContext,
+        segment: Path,
+        center: CGPoint,
+        radius: CGFloat,
+        cloudCover: Double
+    ) {
+        let intensity = cloudOcclusionIntensity(for: cloudCover)
+        guard intensity > 0 else {
+            return
+        }
+
+        let bodyOpacity = 0.30 + (intensity * 0.56)
+        let coreOpacity = 0.34 + (intensity * 0.54)
+        let edgeOpacity = 0.48 + (intensity * 0.42)
+
+        context.fill(
+            segment,
+            with: .color(Color(red: 0.016, green: 0.020, blue: 0.022).opacity(bodyOpacity))
+        )
+
+        context.fill(
+            segment,
+            with: .radialGradient(
+                Gradient(stops: [
+                    .init(color: Color(red: 0.014, green: 0.022, blue: 0.026).opacity(coreOpacity), location: 0),
+                    .init(color: Color(red: 0.018, green: 0.024, blue: 0.024).opacity(coreOpacity), location: 0.66),
+                    .init(color: Color(red: 0.070, green: 0.058, blue: 0.040).opacity(edgeOpacity), location: 0.88),
+                    .init(color: Color(red: 0.130, green: 0.092, blue: 0.040).opacity(edgeOpacity), location: 0.96),
+                    .init(color: Color(red: 0.028, green: 0.030, blue: 0.028).opacity(edgeOpacity), location: 1)
                 ]),
                 center: center,
                 startRadius: 0,

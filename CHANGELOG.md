@@ -18,6 +18,8 @@ All notable changes to SunStatus will be documented in this file.
 - Changed the medium widget layout so status metrics sit on the left and the solar arc uses the right side of the widget.
 - Changed daytime widget arcs to use a proportional daylight span with sunrise and sunset guide lines, coloring only the in-day arc rather than the cropped night side.
 - Refined the solar arc cloud visualization with stronger cloud-blocked background contrast, smoother cloud transitions, and hidden cloud arcs when no meaningful cloud cover is present.
+- Refined proportional daytime widget cloud shading so heavy cloud cover darkens the center-reaching area below the cloud layer instead of only the arc ring.
+- Increased the small widget's night disk size by removing the bottom text rows and giving the arc more vertical room.
 - Expanded night-mode arc rendering and preview-time behavior so the slider can represent the full overnight timeline into the next sunrise.
 - Updated the app, widget extension, Xcode project, and scheme wiring so WidgetKit previews and tests are available from Xcode.
 
