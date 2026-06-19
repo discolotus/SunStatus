@@ -21,6 +21,7 @@ All notable changes to SunStatus will be documented in this file.
 - Refined the solar arc cloud visualization with stronger cloud-blocked background contrast, smoother cloud transitions, and hidden cloud arcs when no meaningful cloud cover is present.
 - Refined proportional daytime widget cloud shading so heavy cloud cover darkens the center-reaching area below the cloud layer instead of only the arc ring.
 - Replaced the widget header's flat SF Symbol with a smoother glass-styled dynamic icon that reflects day, night, daylight progress, and cloud cover.
+- Restyled the proportional daytime widget arc with smoother glass-like sunlight, cloud-shadow, rim, sunrise/sunset, and sun treatments driven by brightness and forecast cloud-cover samples.
 - Increased the small widget's night disk size by removing the bottom text rows and giving the arc more vertical room.
 - Expanded night-mode arc rendering and preview-time behavior so the slider can represent the full overnight timeline into the next sunrise.
 - Updated the app, widget extension, Xcode project, and scheme wiring so WidgetKit previews and tests are available from Xcode.
