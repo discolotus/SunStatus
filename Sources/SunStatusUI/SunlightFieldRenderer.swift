@@ -34,8 +34,8 @@ struct SunlightFieldRenderer {
             from: arcPoints,
             fallbackBrightness: fallbackBrightness,
             fallbackCloudCover: fallbackCloudCover,
-            count: 144,
-            smoothingRadius: 8
+            count: 192,
+            smoothingRadius: 16
         )
 
         guard width > 1, height > 1, geometry.radius > 0 else {
@@ -168,56 +168,27 @@ struct SunlightFieldRenderer {
         let totalCount = max(count, 2)
         let fallbackCloudCover = min(max(fallbackCloudCover ?? 0, 0), 1)
         let fallbackBrightness = min(max(fallbackBrightness, 0), 1)
+        let brightnessCurve = SmoothProgressCurve(
+            points: sortedPoints,
+            fallback: fallbackBrightness,
+            value: \.brightnessScore
+        )
+        let cloudCurve = SmoothProgressCurve(
+            points: sortedPoints,
+            fallback: fallbackCloudCover,
+            value: \.cloudCover
+        )
 
         let rawSamples = (0...totalCount).map { index in
             let progress = Double(index) / Double(totalCount)
             return FieldSample(
                 progress: progress,
-                brightness: interpolatedValue(
-                    at: progress,
-                    in: sortedPoints,
-                    fallback: fallbackBrightness,
-                    value: \.brightnessScore
-                ),
-                cloudCover: interpolatedValue(
-                    at: progress,
-                    in: sortedPoints,
-                    fallback: fallbackCloudCover,
-                    value: \.cloudCover
-                )
+                brightness: brightnessCurve.value(at: progress),
+                cloudCover: cloudCurve.value(at: progress)
             )
         }
 
         return smooth(samples: rawSamples, radius: smoothingRadius)
-    }
-
-    private static func interpolatedValue(
-        at progress: Double,
-        in points: [SunArcPoint],
-        fallback: Double,
-        value: KeyPath<SunArcPoint, Double?>
-    ) -> Double {
-        guard let first = points.first else {
-            return fallback
-        }
-
-        if progress <= first.progress {
-            return min(max(first[keyPath: value] ?? fallback, 0), 1)
-        }
-
-        for pair in zip(points, points.dropFirst()) where progress <= pair.1.progress {
-            let span = pair.1.progress - pair.0.progress
-            guard span > 0 else {
-                return min(max(pair.1[keyPath: value] ?? fallback, 0), 1)
-            }
-
-            let ratio = smootherStep((progress - pair.0.progress) / span)
-            let start = min(max(pair.0[keyPath: value] ?? fallback, 0), 1)
-            let end = min(max(pair.1[keyPath: value] ?? fallback, 0), 1)
-            return start + ((end - start) * ratio)
-        }
-
-        return min(max(points.last?[keyPath: value] ?? fallback, 0), 1)
     }
 
     private static func smooth(samples: [FieldSample], radius: Int) -> [FieldSample] {
@@ -417,5 +388,141 @@ struct SunlightFieldRenderer {
             x: center.x + cos(angle) * radius,
             y: center.y + sin(angle) * radius
         )
+    }
+}
+
+/// Monotone cubic interpolation for forecast samples. Each interval is equivalent
+/// to a cubic Bezier segment, but the slope limiter avoids cloud-cover overshoot.
+struct SmoothProgressCurve {
+    struct Point {
+        let progress: Double
+        let value: Double
+    }
+
+    private let fallback: Double
+    private let points: [Point]
+    private let slopes: [Double]
+
+    init(
+        points sourcePoints: [SunArcPoint],
+        fallback: Double,
+        value: KeyPath<SunArcPoint, Double?>
+    ) {
+        let normalizedPoints = Self.uniqueSortedPoints(
+            sourcePoints.map {
+                Point(
+                    progress: Self.clamp($0.progress),
+                    value: Self.clamp($0[keyPath: value] ?? fallback)
+                )
+            }
+        )
+
+        self.fallback = Self.clamp(fallback)
+        self.points = normalizedPoints
+        self.slopes = Self.slopes(for: normalizedPoints)
+    }
+
+    func value(at progress: Double) -> Double {
+        guard let first = points.first else {
+            return fallback
+        }
+
+        let clampedProgress = Self.clamp(progress)
+        guard points.count > 1 else {
+            return first.value
+        }
+
+        if clampedProgress <= first.progress {
+            return first.value
+        }
+
+        for index in 0..<points.count - 1 where clampedProgress <= points[index + 1].progress {
+            return value(at: clampedProgress, lowerIndex: index)
+        }
+
+        return points.last?.value ?? fallback
+    }
+
+    private func value(at progress: Double, lowerIndex: Int) -> Double {
+        let lower = points[lowerIndex]
+        let upper = points[lowerIndex + 1]
+        let span = upper.progress - lower.progress
+        guard span > 0 else {
+            return upper.value
+        }
+
+        let t = (progress - lower.progress) / span
+        let t2 = t * t
+        let t3 = t2 * t
+        let h00 = (2 * t3) - (3 * t2) + 1
+        let h10 = t3 - (2 * t2) + t
+        let h01 = (-2 * t3) + (3 * t2)
+        let h11 = t3 - t2
+        let value = (h00 * lower.value)
+            + (h10 * span * slopes[lowerIndex])
+            + (h01 * upper.value)
+            + (h11 * span * slopes[lowerIndex + 1])
+
+        return Self.clamp(value)
+    }
+
+    private static func uniqueSortedPoints(_ sourcePoints: [Point]) -> [Point] {
+        let sorted = sourcePoints.sorted { $0.progress < $1.progress }
+        var unique: [Point] = []
+
+        for point in sorted {
+            if let last = unique.last, abs(last.progress - point.progress) < 0.000_001 {
+                unique[unique.count - 1] = point
+            } else {
+                unique.append(point)
+            }
+        }
+
+        return unique
+    }
+
+    private static func slopes(for points: [Point]) -> [Double] {
+        guard points.count > 1 else {
+            return points.map { _ in 0 }
+        }
+
+        let pairedPoints = Array(zip(points, points.dropFirst()))
+        let spans = pairedPoints.map { pair in pair.1.progress - pair.0.progress }
+        let deltas = zip(pairedPoints, spans).map { element in
+            let pair = element.0
+            let span = element.1
+            return span > 0 ? (pair.1.value - pair.0.value) / span : 0
+        }
+
+        guard points.count > 2 else {
+            return [deltas[0], deltas[0]]
+        }
+
+        return points.indices.map { index in
+            if index == points.startIndex {
+                return deltas[0]
+            }
+
+            if index == points.index(before: points.endIndex) {
+                return deltas[deltas.index(before: deltas.endIndex)]
+            }
+
+            let previousDelta = deltas[index - 1]
+            let nextDelta = deltas[index]
+            guard previousDelta * nextDelta > 0 else {
+                return 0
+            }
+
+            let previousSpan = spans[index - 1]
+            let nextSpan = spans[index]
+            let previousWeight = (2 * nextSpan) + previousSpan
+            let nextWeight = nextSpan + (2 * previousSpan)
+            return (previousWeight + nextWeight)
+                / ((previousWeight / previousDelta) + (nextWeight / nextDelta))
+        }
+    }
+
+    private static func clamp(_ value: Double) -> Double {
+        min(max(value, 0), 1)
     }
 }

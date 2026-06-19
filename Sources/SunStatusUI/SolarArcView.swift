@@ -155,7 +155,7 @@ public struct SolarArcView: View {
             return
         }
 
-        let samples = cloudArcSamples(from: points, steps: 256, smoothingRadius: 12)
+        let samples = cloudArcSamples(from: points, steps: 256, smoothingRadius: 18)
         guard samples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -374,7 +374,7 @@ public struct SolarArcView: View {
             return
         }
 
-        let samples = cloudArcSamples(from: points, steps: 160, smoothingRadius: 12)
+        let samples = cloudArcSamples(from: points, steps: 160, smoothingRadius: 18)
         guard samples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -623,7 +623,7 @@ public struct SolarArcView: View {
             )
         }
 
-        let cloudSamples = cloudArcSamples(from: samples, steps: 192, smoothingRadius: 10)
+        let cloudSamples = cloudArcSamples(from: samples, steps: 192, smoothingRadius: 16)
         for pair in zip(cloudSamples, cloudSamples.dropFirst()) {
             let startAngle = sunriseAngle + CGFloat(pair.0.progress) * dayAngle
             let endAngle = sunriseAngle + CGFloat(pair.1.progress) * dayAngle
@@ -659,7 +659,7 @@ public struct SolarArcView: View {
             return
         }
 
-        let cloudSamples = cloudArcSamples(from: samples, steps: 256, smoothingRadius: 12)
+        let cloudSamples = cloudArcSamples(from: samples, steps: 256, smoothingRadius: 18)
         guard cloudSamples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -1039,9 +1039,15 @@ public struct SolarArcView: View {
         points: [SunArcPoint],
         threshold: Double
     ) {
+        let brightnessCurve = SmoothProgressCurve(
+            points: points,
+            fallback: brightnessScoreValue(status.brightness.score),
+            value: \.brightnessScore
+        )
+
         for range in cloudArcRanges(from: samples, threshold: threshold) {
             let midProgress = (range.start + range.end) / 2
-            let brightness = interpolatedBrightnessScore(at: midProgress, in: points)
+            let brightness = brightnessCurve.value(at: midProgress)
             let brightnessLift = min(max(brightness, 0), 1)
             let segment = annularWedgePath(
                 center: geometry.center,
@@ -1214,12 +1220,17 @@ public struct SolarArcView: View {
     private func cloudArcSamples(from points: [SunArcPoint], steps: Int, smoothingRadius: Int = 0) -> [CloudArcSample] {
         let sortedPoints = points.sorted { $0.progress < $1.progress }
         let totalSteps = max(steps, 2)
+        let cloudCurve = SmoothProgressCurve(
+            points: sortedPoints,
+            fallback: cloudCoverValue(nil),
+            value: \.cloudCover
+        )
 
         let samples = (0...totalSteps).map { index in
             let progress = Double(index) / Double(totalSteps)
             return CloudArcSample(
                 progress: progress,
-                cloudCover: interpolatedCloudCover(at: progress, in: sortedPoints)
+                cloudCover: cloudCurve.value(at: progress)
             )
         }
 
@@ -1254,54 +1265,6 @@ public struct SolarArcView: View {
                 cloudCover: weightedCloudCover / totalWeight
             )
         }
-    }
-
-    private func interpolatedCloudCover(at progress: Double, in points: [SunArcPoint]) -> Double {
-        guard let first = points.first else {
-            return cloudCoverValue(nil)
-        }
-
-        if progress <= first.progress {
-            return cloudCoverValue(first.cloudCover)
-        }
-
-        for pair in zip(points, points.dropFirst()) where progress <= pair.1.progress {
-            let span = pair.1.progress - pair.0.progress
-            guard span > 0 else {
-                return cloudCoverValue(pair.1.cloudCover)
-            }
-
-            let ratio = smootherStep((progress - pair.0.progress) / span)
-            let start = cloudCoverValue(pair.0.cloudCover)
-            let end = cloudCoverValue(pair.1.cloudCover)
-            return start + ((end - start) * ratio)
-        }
-
-        return cloudCoverValue(points.last?.cloudCover)
-    }
-
-    private func interpolatedBrightnessScore(at progress: Double, in points: [SunArcPoint]) -> Double {
-        guard let first = points.first else {
-            return brightnessScoreValue(nil)
-        }
-
-        if progress <= first.progress {
-            return brightnessScoreValue(first.brightnessScore)
-        }
-
-        for pair in zip(points, points.dropFirst()) where progress <= pair.1.progress {
-            let span = pair.1.progress - pair.0.progress
-            guard span > 0 else {
-                return brightnessScoreValue(pair.1.brightnessScore)
-            }
-
-            let ratio = smootherStep((progress - pair.0.progress) / span)
-            let start = brightnessScoreValue(pair.0.brightnessScore)
-            let end = brightnessScoreValue(pair.1.brightnessScore)
-            return start + ((end - start) * ratio)
-        }
-
-        return brightnessScoreValue(points.last?.brightnessScore)
     }
 
     private func cloudCoverValue(_ value: Double?) -> Double {
