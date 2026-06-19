@@ -324,11 +324,11 @@ public struct SolarArcView: View {
 
             drawDaylightCloudOcclusion(
                 in: context,
-                segment: proportionalCloudBlockedFanPath(
-                    from: pair.0.progress,
-                    through: pair.1.progress,
-                    geometry: geometry,
-                    radiusScale: proportionalDayCloudArcRadiusScale
+                segment: wedgePath(
+                    center: center,
+                    radius: radius * proportionalDayCloudArcRadiusScale,
+                    startAngle: geometry.angle(at: pair.0.progress),
+                    endAngle: geometry.angle(at: pair.1.progress)
                 ),
                 center: center,
                 radius: radius * proportionalDayCloudArcRadiusScale,
@@ -801,28 +801,6 @@ public struct SolarArcView: View {
         return path
     }
 
-    private func proportionalCloudBlockedFanPath(
-        from start: Double,
-        through end: Double,
-        geometry: ProportionalDaylightArcGeometry,
-        radiusScale: CGFloat
-    ) -> Path {
-        let clampedStart = min(max(start, 0), 1)
-        let clampedEnd = min(max(end, 0), 1)
-        let steps = max(Int((abs(clampedEnd - clampedStart) * 96).rounded(.up)), 2)
-        let points = (0...steps).map { index in
-            let progress = clampedStart + ((clampedEnd - clampedStart) * Double(index) / Double(steps))
-            return geometry.point(at: progress, radiusScale: radiusScale)
-        }
-
-        var path = Path()
-        path.move(to: geometry.center)
-        path.addLine(to: geometry.point(at: clampedStart, radiusScale: radiusScale))
-        path.addLines(points)
-        path.closeSubpath()
-        return path
-    }
-
     private func drawCloudOcclusion(
         in context: GraphicsContext,
         segment: Path,
@@ -874,9 +852,9 @@ public struct SolarArcView: View {
             return
         }
 
-        let bodyOpacity = 0.30 + (intensity * 0.56)
-        let coreOpacity = 0.34 + (intensity * 0.54)
-        let edgeOpacity = 0.48 + (intensity * 0.42)
+        let bodyOpacity = 0.46 + (intensity * 0.48)
+        let coreOpacity = 0.50 + (intensity * 0.44)
+        let edgeOpacity = 0.62 + (intensity * 0.32)
 
         context.fill(
             segment,
@@ -887,10 +865,10 @@ public struct SolarArcView: View {
             segment,
             with: .radialGradient(
                 Gradient(stops: [
-                    .init(color: Color(red: 0.014, green: 0.022, blue: 0.026).opacity(coreOpacity), location: 0),
-                    .init(color: Color(red: 0.018, green: 0.024, blue: 0.024).opacity(coreOpacity), location: 0.66),
-                    .init(color: Color(red: 0.070, green: 0.058, blue: 0.040).opacity(edgeOpacity), location: 0.88),
-                    .init(color: Color(red: 0.130, green: 0.092, blue: 0.040).opacity(edgeOpacity), location: 0.96),
+                    .init(color: Color(red: 0.010, green: 0.016, blue: 0.020).opacity(coreOpacity), location: 0),
+                    .init(color: Color(red: 0.014, green: 0.018, blue: 0.018).opacity(coreOpacity), location: 0.66),
+                    .init(color: Color(red: 0.052, green: 0.046, blue: 0.032).opacity(edgeOpacity), location: 0.88),
+                    .init(color: Color(red: 0.112, green: 0.076, blue: 0.032).opacity(edgeOpacity), location: 0.96),
                     .init(color: Color(red: 0.028, green: 0.030, blue: 0.028).opacity(edgeOpacity), location: 1)
                 ]),
                 center: center,
@@ -1076,10 +1054,14 @@ private struct ProportionalDaylightArcGeometry {
         sunriseAngle + dayAngle
     }
 
-    func point(at progress: Double, radiusScale: CGFloat = 1) -> CGPoint {
+    func angle(at progress: Double) -> CGFloat {
         let clampedProgress = min(max(progress, 0), 1)
+        return sunriseAngle + (CGFloat(clampedProgress) * dayAngle)
+    }
+
+    func point(at progress: Double, radiusScale: CGFloat = 1) -> CGPoint {
         let clampedRadiusScale = min(max(radiusScale, 0), 1)
-        let angle = sunriseAngle + (CGFloat(clampedProgress) * dayAngle)
+        let angle = angle(at: progress)
         let scaledRadius = radius * clampedRadiusScale
 
         return CGPoint(
