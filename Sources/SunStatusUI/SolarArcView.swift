@@ -42,13 +42,13 @@ public struct SolarArcView: View {
             Canvas { context, size in
                 let geometry = SolarArcGeometry(size: size, verticalOffset: 14)
 
-                if displayProgress == nil {
-                    drawNightDisk(in: context, size: size)
+                if daylightLayout == .proportional {
+                    drawProportionalDaylightArc(in: context, size: size)
                     return
                 }
 
-                if daylightLayout == .proportional {
-                    drawProportionalDaylightArc(in: context, size: size)
+                if displayProgress == nil {
+                    drawNightDisk(in: context, size: size)
                     return
                 }
 
@@ -190,7 +190,7 @@ public struct SolarArcView: View {
             context.stroke(
                 segment,
                 with: .color(cloudColor(for: cloudCover)),
-                style: StrokeStyle(lineWidth: 5.0, lineCap: .butt, lineJoin: .round)
+                style: StrokeStyle(lineWidth: cloudBodyLineWidth(for: cloudCover, base: 5.0), lineCap: .butt, lineJoin: .round)
             )
 
             var highlight = Path()
@@ -405,7 +405,7 @@ public struct SolarArcView: View {
             samples: samples,
             threshold: 0.36,
             radiusScale: proportionalDayCloudArcRadiusScale,
-            lineWidth: 5.8,
+            lineWidth: 7.0,
             color: Color(white: 0.46).opacity(0.58)
         )
         drawCloudBandLayer(
@@ -414,8 +414,8 @@ public struct SolarArcView: View {
             samples: samples,
             threshold: 0.72,
             radiusScale: proportionalDayCloudArcRadiusScale,
-            lineWidth: 4.0,
-            color: Color(white: 0.24).opacity(0.42)
+            lineWidth: 6.4,
+            color: Color(white: 0.24).opacity(0.48)
         )
         drawCloudBandLayer(
             in: &clippedContext,
@@ -644,7 +644,7 @@ public struct SolarArcView: View {
             context.stroke(
                 arcPath(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle),
                 with: .color(cloudColor(for: cloudCover)),
-                style: StrokeStyle(lineWidth: 4.6, lineCap: .butt, lineJoin: .round)
+                style: StrokeStyle(lineWidth: cloudBodyLineWidth(for: cloudCover, base: 4.8), lineCap: .butt, lineJoin: .round)
             )
 
             context.stroke(
@@ -1306,6 +1306,10 @@ public struct SolarArcView: View {
     private func cloudShadowLineColor(for cloudCover: Double) -> Color {
         let opacity = cloudLineOpacity(for: cloudCover)
         return Color(red: 0.04, green: 0.04, blue: 0.045).opacity(0.34 * opacity)
+    }
+
+    private func cloudBodyLineWidth(for cloudCover: Double, base: CGFloat) -> CGFloat {
+        base + CGFloat(cloudOcclusionIntensity(for: cloudCover)) * 2.2
     }
 
     private func cloudColor(for cloudCover: Double) -> Color {
