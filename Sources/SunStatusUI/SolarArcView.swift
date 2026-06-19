@@ -9,6 +9,8 @@ public enum SolarArcDaylightLayout: Sendable {
 }
 
 public struct SolarArcView: View {
+    @Environment(\.displayScale) private var displayScale
+
     private let status: DaylightStatus
     private var previewProgress: Double?
     private var previewDate: Date?
@@ -105,13 +107,33 @@ public struct SolarArcView: View {
 
     private func drawSunlightBackground(in context: GraphicsContext, geometry: SolarArcGeometry) {
         let points = status.arcPoints.sorted { $0.progress < $1.progress }
-        guard points.count > 1 else {
-            return
-        }
-
         let center = arcCenter(for: geometry)
         let radius = distance(from: center, to: geometry.point(at: 0.5))
         let fullFan = sunlightFanPath(from: 0, through: 1, center: center, geometry: geometry)
+
+        if let rendered = SunlightFieldRenderer.render(
+            geometry: SunlightFieldRenderer.Geometry(
+                size: geometry.size,
+                center: center,
+                radius: radius,
+                startAngle: -.pi,
+                endAngle: 0,
+                cloudRadiusScale: cloudArcRadiusScale,
+                cutsGroundBelowBoundaryLines: false
+            ),
+            arcPoints: points,
+            fallbackBrightness: status.brightness.score,
+            fallbackCloudCover: status.brightness.cloudCover,
+            displayScale: displayScale
+        ) {
+            var clippedContext = context
+            clippedContext.clip(to: fullFan)
+            clippedContext.draw(
+                Image(decorative: rendered.cgImage, scale: rendered.scale, orientation: .up),
+                in: CGRect(origin: .zero, size: geometry.size)
+            )
+            return
+        }
 
         context.fill(
             fullFan,
@@ -125,41 +147,6 @@ public struct SolarArcView: View {
                 endRadius: radius
             )
         )
-
-        context.fill(
-            fullFan,
-            with: .linearGradient(
-                Gradient(colors: [
-                    warmSunlightColor(opacity: 0.34),
-                    clearSunlightColor(opacity: 0.44),
-                    warmSunlightColor(opacity: 0.34)
-                ]),
-                startPoint: geometry.point(at: 0),
-                endPoint: geometry.point(at: 1)
-            )
-        )
-
-        let cloudSamples = cloudArcSamples(from: points, steps: 192, smoothingRadius: 10)
-        for pair in zip(cloudSamples, cloudSamples.dropFirst()) {
-            let cloudCover = (pair.0.cloudCover + pair.1.cloudCover) / 2
-            guard cloudOcclusionIntensity(for: cloudCover) > 0 else {
-                continue
-            }
-
-            drawCloudOcclusion(
-                in: context,
-                segment: cloudBlockedFanPath(
-                    from: pair.0.progress,
-                    through: pair.1.progress,
-                    center: center,
-                    geometry: geometry,
-                    radiusScale: cloudArcRadiusScale
-                ),
-                center: center,
-                radius: radius * cloudArcRadiusScale,
-                cloudCover: cloudCover
-            )
-        }
     }
 
     private func drawCloudCoverArc(in context: GraphicsContext, geometry: SolarArcGeometry) {
@@ -311,42 +298,44 @@ public struct SolarArcView: View {
         context.fill(fullFan, with: .color(Color.white.opacity(0.035)))
 
         let currentBrightness = brightnessScoreValue(status.brightness.score)
-        context.fill(
-            fullFan,
-            with: .radialGradient(
-                Gradient(stops: [
-                    .init(color: clearSunlightColor(opacity: 0.26 + (currentBrightness * 0.16)), location: 0),
-                    .init(color: clearSunlightColor(opacity: 0.42 + (currentBrightness * 0.18)), location: 0.70),
-                    .init(color: warmSunlightColor(opacity: 0.44 + (currentBrightness * 0.22)), location: 1)
-                ]),
+        if let rendered = SunlightFieldRenderer.render(
+            geometry: SunlightFieldRenderer.Geometry(
+                size: geometry.size,
                 center: center,
-                startRadius: 0,
-                endRadius: radius
+                radius: radius,
+                startAngle: geometry.sunriseAngle,
+                endAngle: geometry.sunsetAngle,
+                cloudRadiusScale: proportionalDayCloudArcRadiusScale,
+                cutsGroundBelowBoundaryLines: true
+            ),
+            arcPoints: points,
+            fallbackBrightness: status.brightness.score,
+            fallbackCloudCover: status.brightness.cloudCover,
+            displayScale: displayScale
+        ) {
+            var clippedContext = context
+            clippedContext.clip(to: fullFan)
+            clippedContext.draw(
+                Image(decorative: rendered.cgImage, scale: rendered.scale, orientation: .up),
+                in: CGRect(origin: .zero, size: geometry.size)
             )
-        )
-
-        context.fill(
-            fullFan,
-            with: .linearGradient(
-                Gradient(stops: [
-                    .init(color: warmSunlightColor(opacity: 0.32), location: 0),
-                    .init(color: clearSunlightColor(opacity: 0.34 + (currentBrightness * 0.10)), location: 0.48),
-                    .init(color: .white.opacity(0.16), location: 0.72),
-                    .init(color: warmSunlightColor(opacity: 0.26), location: 1)
-                ]),
-                startPoint: geometry.point(at: 0),
-                endPoint: geometry.point(at: 1)
+        } else {
+            context.fill(
+                fullFan,
+                with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: clearSunlightColor(opacity: 0.26 + (currentBrightness * 0.16)), location: 0),
+                        .init(color: clearSunlightColor(opacity: 0.42 + (currentBrightness * 0.18)), location: 0.70),
+                        .init(color: warmSunlightColor(opacity: 0.44 + (currentBrightness * 0.22)), location: 1)
+                    ]),
+                    center: center,
+                    startRadius: 0,
+                    endRadius: radius
+                )
             )
-        )
+        }
 
         drawProportionalGlassSheen(in: context, geometry: geometry, fullFan: fullFan)
-
-        drawProportionalCloudShadowBands(
-            in: context,
-            geometry: geometry,
-            samples: cloudArcSamples(from: points, steps: 160, smoothingRadius: 12),
-            points: points
-        )
     }
 
     private func drawProportionalBoundaryLines(in context: GraphicsContext, geometry: ProportionalDaylightArcGeometry) {
