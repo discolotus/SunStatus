@@ -244,6 +244,7 @@ public struct SolarArcView: View {
         drawProportionalCloudCoverArc(in: context, geometry: geometry)
         drawProportionalFutureArc(in: context, geometry: geometry)
         drawProportionalCompletedArc(in: context, geometry: geometry)
+        clearProportionalGroundRegion(in: context, geometry: geometry)
         drawProportionalBoundaryLines(in: context, geometry: geometry)
         drawProportionalSun(in: context, geometry: geometry)
     }
@@ -362,6 +363,15 @@ public struct SolarArcView: View {
             radius: geometry.radius,
             angle: geometry.sunsetAngle,
             color: warmSunlightColor(opacity: 0.66)
+        )
+    }
+
+    private func clearProportionalGroundRegion(in context: GraphicsContext, geometry: ProportionalDaylightArcGeometry) {
+        var cutoutContext = context
+        cutoutContext.blendMode = .destinationOut
+        cutoutContext.fill(
+            proportionalGroundCutoutPath(geometry: geometry),
+            with: .color(.white)
         )
     }
 
@@ -745,6 +755,22 @@ public struct SolarArcView: View {
             endAngle: Angle(radians: Double(startAngle)),
             clockwise: true
         )
+        path.closeSubpath()
+        return path
+    }
+
+    private func proportionalGroundCutoutPath(geometry: ProportionalDaylightArcGeometry) -> Path {
+        let left = geometry.point(at: 0)
+        let center = geometry.center
+        let right = geometry.point(at: 1)
+        let overscan = max(geometry.size.width, geometry.size.height)
+
+        var path = Path()
+        path.move(to: left)
+        path.addLine(to: center)
+        path.addLine(to: right)
+        path.addLine(to: CGPoint(x: geometry.size.width + overscan, y: geometry.size.height + overscan))
+        path.addLine(to: CGPoint(x: -overscan, y: geometry.size.height + overscan))
         path.closeSubpath()
         return path
     }
