@@ -8,6 +8,15 @@ public enum SolarArcDaylightLayout: Sendable {
     case proportional
 }
 
+private enum CloudTransitionSmoothing {
+    static let lineSampleCount = 256
+    static let compactLineSampleCount = 192
+    static let nightShadeSampleCount = 192
+    static let lineSmoothingRadius = 24
+    static let compactLineSmoothingRadius = 20
+    static let nightShadeSmoothingRadius = 20
+}
+
 public struct SolarArcView: View {
     @Environment(\.displayScale) private var displayScale
 
@@ -155,7 +164,11 @@ public struct SolarArcView: View {
             return
         }
 
-        let samples = cloudArcSamples(from: points, steps: 256, smoothingRadius: 18)
+        let samples = cloudArcSamples(
+            from: points,
+            steps: CloudTransitionSmoothing.lineSampleCount,
+            smoothingRadius: CloudTransitionSmoothing.lineSmoothingRadius
+        )
         guard samples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -374,7 +387,11 @@ public struct SolarArcView: View {
             return
         }
 
-        let samples = cloudArcSamples(from: points, steps: 160, smoothingRadius: 18)
+        let samples = cloudArcSamples(
+            from: points,
+            steps: CloudTransitionSmoothing.compactLineSampleCount,
+            smoothingRadius: CloudTransitionSmoothing.compactLineSmoothingRadius
+        )
         guard samples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -623,7 +640,11 @@ public struct SolarArcView: View {
             )
         }
 
-        let cloudSamples = cloudArcSamples(from: samples, steps: 192, smoothingRadius: 16)
+        let cloudSamples = cloudArcSamples(
+            from: samples,
+            steps: CloudTransitionSmoothing.nightShadeSampleCount,
+            smoothingRadius: CloudTransitionSmoothing.nightShadeSmoothingRadius
+        )
         for pair in zip(cloudSamples, cloudSamples.dropFirst()) {
             let startAngle = sunriseAngle + CGFloat(pair.0.progress) * dayAngle
             let endAngle = sunriseAngle + CGFloat(pair.1.progress) * dayAngle
@@ -659,7 +680,11 @@ public struct SolarArcView: View {
             return
         }
 
-        let cloudSamples = cloudArcSamples(from: samples, steps: 256, smoothingRadius: 18)
+        let cloudSamples = cloudArcSamples(
+            from: samples,
+            steps: CloudTransitionSmoothing.lineSampleCount,
+            smoothingRadius: CloudTransitionSmoothing.lineSmoothingRadius
+        )
         guard cloudSamples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
             return
         }
@@ -1220,6 +1245,7 @@ public struct SolarArcView: View {
     private func cloudArcSamples(from points: [SunArcPoint], steps: Int, smoothingRadius: Int = 0) -> [CloudArcSample] {
         let sortedPoints = points.sorted { $0.progress < $1.progress }
         let totalSteps = max(steps, 2)
+        // Uses the same monotone cubic curve as the shaded sunlight field.
         let cloudCurve = SmoothProgressCurve(
             points: sortedPoints,
             fallback: cloudCoverValue(nil),

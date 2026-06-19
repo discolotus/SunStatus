@@ -2,6 +2,11 @@ import CoreGraphics
 import Foundation
 import SunStatusCore
 
+private enum SunlightFieldSmoothing {
+    static let sampleCount = 192
+    static let smoothingRadius = 16
+}
+
 struct SunlightFieldRenderer {
     struct Geometry {
         let size: CGSize
@@ -34,8 +39,8 @@ struct SunlightFieldRenderer {
             from: arcPoints,
             fallbackBrightness: fallbackBrightness,
             fallbackCloudCover: fallbackCloudCover,
-            count: 192,
-            smoothingRadius: 16
+            count: SunlightFieldSmoothing.sampleCount,
+            smoothingRadius: SunlightFieldSmoothing.smoothingRadius
         )
 
         guard width > 1, height > 1, geometry.radius > 0 else {
