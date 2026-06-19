@@ -9,6 +9,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "SunStatus", targets: ["SunStatus"]),
+        .executable(name: "SunStatusIconRenderer", targets: ["SunStatusIconRenderer"]),
         .library(name: "SunStatusCore", targets: ["SunStatusCore"])
     ],
     targets: [
@@ -24,6 +25,7 @@ let package = Package(
                 "SunStatusUI"
             ]
         ),
+        .executableTarget(name: "SunStatusIconRenderer"),
         .testTarget(
             name: "SunStatusCoreTests",
             dependencies: ["SunStatusCore"]
