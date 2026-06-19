@@ -283,10 +283,12 @@ struct SunStatusWidgetView: View {
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: symbolName)
-                .font(.system(size: compact ? 16 : 18, weight: .semibold))
-                .foregroundStyle(.orange)
-                .frame(width: compact ? 18 : 20)
+            SunStatusDynamicIcon(
+                status: entry.status,
+                size: compact ? 30 : 34,
+                variant: .orb
+            )
+            .frame(width: compact ? 30 : 34)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(entry.status.brightness.classification.displayName)
@@ -318,19 +320,6 @@ struct SunStatusWidgetView: View {
             [Color.yellow.opacity(0.20), Color.blue.opacity(0.10)]
         case .vivid:
             [Color.yellow.opacity(0.24), Color.orange.opacity(0.12)]
-        }
-    }
-
-    private var symbolName: String {
-        switch entry.status.brightness.classification {
-        case .dark:
-            "moon.stars.fill"
-        case .dim:
-            "sun.horizon.fill"
-        case .muted:
-            "cloud.sun.fill"
-        case .bright, .vivid:
-            "sun.max.fill"
         }
     }
 

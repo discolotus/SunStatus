@@ -14,6 +14,7 @@
 		14A5102F119EDF1F2F27C67A /* SolarPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAB9DD60E7967BE5B86F9CE /* SolarPositionTests.swift */; };
 		18F67B0B24639ABDB412DBB3 /* SunStatusCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE890E09D774C27923B4C0A4 /* SunStatusCore.framework */; };
 		2547D846E1AA9A71A957029D /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAEDA27B8069810F53E0AD7 /* WeatherSnapshot.swift */; };
+		305EE812878C10DD6CF0D8BE /* SunStatusDynamicIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602D1A80C79FE2B96BF5A5B6 /* SunStatusDynamicIcon.swift */; };
 		3426A931C82DF04617E26B57 /* SunPathGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73A5B182604291AF0B3BE1F /* SunPathGeometryTests.swift */; };
 		35B45908533A33DC3E06B791 /* MockDaylightProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CD391A7901E7BB7531720D /* MockDaylightProviderTests.swift */; };
 		3BC43061EDE9DCDF8285A25A /* SunStatusCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AE890E09D774C27923B4C0A4 /* SunStatusCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -174,6 +175,7 @@
 		5671DCFA5C73C6C1B987D30C /* SunStatusPreviewFixturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusPreviewFixturesTests.swift; sourceTree = "<group>"; };
 		56961B4479F8CCA06715DE7B /* SunArcProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunArcProjection.swift; sourceTree = "<group>"; };
 		5CB24893A86D004F3618E6A9 /* SunMapKitGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitGeometry.swift; sourceTree = "<group>"; };
+		602D1A80C79FE2B96BF5A5B6 /* SunStatusDynamicIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusDynamicIcon.swift; sourceTree = "<group>"; };
 		64A593A4E8CA2FB48F838979 /* DaylightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaylightModels.swift; sourceTree = "<group>"; };
 		6B448CB2D7FC4779A73329F8 /* SunStatusWidgetNightCanvasPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunStatusWidgetNightCanvasPreview.swift; sourceTree = "<group>"; };
 		6F7F3A32C725CFBCDBD0467A /* SunMapKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMapKitView.swift; sourceTree = "<group>"; };
@@ -326,6 +328,7 @@
 			children = (
 				E55FF9D5E8F22D5AE7B99AFA /* SolarArcGeometry.swift */,
 				3FAE225B42D1E5345F18F764 /* SolarArcView.swift */,
+				602D1A80C79FE2B96BF5A5B6 /* SunStatusDynamicIcon.swift */,
 			);
 			path = SunStatusUI;
 			sourceTree = "<group>";
@@ -600,6 +603,7 @@
 			files = (
 				B83C8D86F9C4198ACF8C1A1F /* SolarArcGeometry.swift in Sources */,
 				D803F8EA52C991BAE3499497 /* SolarArcView.swift in Sources */,
+				305EE812878C10DD6CF0D8BE /* SunStatusDynamicIcon.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
