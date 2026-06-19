@@ -233,6 +233,7 @@ public struct SolarArcView: View {
         drawProportionalCompletedArc(in: context, geometry: geometry)
         clearProportionalGroundRegion(in: context, geometry: geometry)
         drawProportionalBoundaryLines(in: context, geometry: geometry)
+        drawProportionalNightSun(in: context, geometry: geometry)
         drawProportionalSun(in: context, geometry: geometry)
     }
 
@@ -461,6 +462,54 @@ public struct SolarArcView: View {
             )
         )
         context.stroke(Path(ellipseIn: rect), with: .color(warmSunlightColor(opacity: 0.88)), lineWidth: 2.4)
+    }
+
+    private func drawProportionalNightSun(in context: GraphicsContext, geometry: ProportionalDaylightArcGeometry) {
+        guard displayProgress == nil,
+              let nightAngle = nightSunAngle(
+                date: displayDate,
+                sunrise: displaySunrise,
+                sunset: displaySunset,
+                sunriseAngle: geometry.sunriseAngle,
+                sunsetAngle: geometry.sunsetAngle
+              ) else {
+            return
+        }
+
+        let sunPoint = point(center: geometry.center, radius: geometry.radius * 0.78, angle: nightAngle)
+        let radius = max(min(geometry.radius * 0.12, 7), 4.5)
+        let rect = CGRect(x: sunPoint.x - radius, y: sunPoint.y - radius, width: radius * 2, height: radius * 2)
+
+        context.fill(
+            Path(ellipseIn: rect.insetBy(dx: -4, dy: -4)),
+            with: .radialGradient(
+                Gradient(colors: [
+                    warmSunlightColor(opacity: 0.22),
+                    warmSunlightColor(opacity: 0)
+                ]),
+                center: sunPoint,
+                startRadius: 0,
+                endRadius: radius + 8
+            )
+        )
+        context.fill(
+            Path(ellipseIn: rect),
+            with: .radialGradient(
+                Gradient(colors: [
+                    clearSunlightColor(opacity: 0.56),
+                    warmSunlightColor(opacity: 0.50),
+                    Color(red: 0.72, green: 0.40, blue: 0.12).opacity(0.44)
+                ]),
+                center: CGPoint(x: sunPoint.x - radius * 0.35, y: sunPoint.y - radius * 0.40),
+                startRadius: 0,
+                endRadius: radius
+            )
+        )
+        context.stroke(
+            Path(ellipseIn: rect),
+            with: .color(warmSunlightColor(opacity: 0.48)),
+            lineWidth: 1.6
+        )
     }
 
     private func drawNightDisk(in context: GraphicsContext, size: CGSize) {
