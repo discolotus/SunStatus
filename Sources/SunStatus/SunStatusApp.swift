@@ -6,7 +6,14 @@ import SunStatusCore
 
 @main
 enum SunStatusMain {
+    @MainActor
     static func main() {
+        #if DEBUG
+        if SunStatusPopoverEvidenceRenderer.renderIfRequested() {
+            return
+        }
+        #endif
+
         guard !AppDelegate.shouldActivateExistingInstanceAndExit else {
             return
         }

@@ -1,5 +1,7 @@
 import AppKit
+import ImageIO
 import SwiftUI
+import UniformTypeIdentifiers
 #if canImport(SunStatusCore)
 import SunStatusCore
 #endif
@@ -556,6 +558,84 @@ private struct PopoverPreviewShape: InsettableShape {
         var shape = self
         shape.insetAmount += amount
         return shape
+    }
+}
+
+enum SunStatusPopoverEvidenceRenderer {
+    @MainActor
+    static func renderIfRequested() -> Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--render-popover-pr-evidence") else {
+            return false
+        }
+
+        do {
+            let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            let outputURL = root.appendingPathComponent("screenshots/pr-evidence/popover-night-canvas.png")
+            try FileManager.default.createDirectory(
+                at: outputURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try render(outputURL: outputURL)
+            print("Wrote \(outputURL.path)")
+            return true
+        } catch {
+            fputs("Failed to render popover PR evidence: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+
+    @MainActor
+    private static func render(outputURL: URL) throws {
+        let content = SunStatusPopoverCanvasPreview(
+            title: "Popover night canvas",
+            status: SunStatusPopoverPreviewData.nightStatus,
+            isPinned: true
+        )
+        .frame(width: 520, height: 760)
+        .environment(\.colorScheme, .dark)
+        .tint(.blue)
+
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 520, height: 760)
+        hostingView.wantsLayer = true
+        hostingView.layoutSubtreeIfNeeded()
+
+        guard let representation = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) else {
+            throw RenderError.missingImage
+        }
+        representation.size = hostingView.bounds.size
+        hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+
+        let image = NSImage(size: hostingView.bounds.size)
+        image.addRepresentation(representation)
+
+        guard let tiffData = image.tiffRepresentation,
+              let source = CGImageSourceCreateWithData(tiffData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        else {
+            throw RenderError.missingImage
+        }
+
+        try writePNG(cgImage, to: outputURL)
+    }
+
+    private static func writePNG(_ image: CGImage, to url: URL) throws {
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+            throw RenderError.missingDestination
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw RenderError.writeFailed
+        }
+    }
+
+    private enum RenderError: Error {
+        case missingImage
+        case missingDestination
+        case writeFailed
     }
 }
 
