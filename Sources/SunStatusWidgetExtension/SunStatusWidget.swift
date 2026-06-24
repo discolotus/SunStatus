@@ -282,30 +282,11 @@ struct SunStatusWidgetView: View {
     }
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            SunStatusDynamicIcon(
-                status: entry.status,
-                size: compact ? 30 : 34,
-                variant: .orb
-            )
-            .frame(width: compact ? 30 : 34)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(entry.status.brightness.classification.displayName)
-                    .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if showsLocation {
-                    Text(entry.status.locationName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
+        SunStatusIdentityHeader(
+            status: entry.status,
+            scale: compact ? .compact : .standard,
+            showsLocation: showsLocation
+        )
     }
 
     private var backgroundColors: [Color] {

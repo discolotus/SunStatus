@@ -79,24 +79,14 @@ struct SunStatusPopoverView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            SunStatusDynamicIcon(status: status, size: 58, variant: .orb)
-                .frame(width: 58, height: 58)
+        VStack(alignment: .leading, spacing: 5) {
+            SunStatusIdentityHeader(status: status, scale: .standard, showsLocation: true)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(status.brightness.classification.displayName)
-                    .font(.system(size: 21, weight: .semibold, design: .rounded))
-
-                Text(nextTransitionText)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                Text(status.locationName)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-
-            Spacer()
+            Text(nextTransitionText)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .padding(.leading, 42)
         }
     }
 

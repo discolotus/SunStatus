@@ -4,6 +4,9 @@ import SwiftUI
 #if canImport(SunStatusCore)
 import SunStatusCore
 #endif
+#if canImport(SunStatusUI)
+import SunStatusUI
+#endif
 
 @MainActor
 final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
@@ -46,8 +49,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             return
         }
 
-        button.image = NSImage(systemSymbolName: "sun.max.fill", accessibilityDescription: "SunStatus")
-        button.image?.isTemplate = true
         button.imagePosition = .imageLeading
         button.toolTip = "SunStatus"
         button.target = self
@@ -94,6 +95,8 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         let status = currentStatus()
 
         if let button = statusItem.button {
+            button.image = statusItemIcon(for: status)
+            button.image?.isTemplate = false
             button.title = menuTitle(for: status)
             button.setAccessibilityLabel(accessibilityLabel(for: status))
         }
@@ -443,6 +446,26 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         }
 
         return "\(max(minutes, 1))m"
+    }
+
+    private func statusItemIcon(for status: DaylightStatus) -> NSImage? {
+        let iconSize: CGFloat = 18
+        let renderer = ImageRenderer(
+            content: SunStatusDynamicIcon(status: status, size: iconSize, variant: .orb)
+                .frame(width: iconSize, height: iconSize)
+        )
+        renderer.scale = statusItem.button?.window?.backingScaleFactor
+            ?? NSScreen.main?.backingScaleFactor
+            ?? 2
+
+        guard let cgImage = renderer.cgImage else {
+            return nil
+        }
+
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: iconSize, height: iconSize))
+        image.isTemplate = false
+        image.accessibilityDescription = "SunStatus"
+        return image
     }
 
     private func accessibilityLabel(for status: DaylightStatus) -> String {

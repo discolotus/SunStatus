@@ -112,30 +112,11 @@ private struct SunStatusWidgetNightCanvasPreview: View {
     }
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            SunStatusDynamicIcon(
-                status: status,
-                size: compact ? 30 : 34,
-                variant: .orb
-            )
-            .frame(width: compact ? 30 : 34)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(status.brightness.classification.displayName)
-                    .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if showsLocation {
-                    Text(status.locationName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
+        SunStatusIdentityHeader(
+            status: status,
+            scale: compact ? .compact : .standard,
+            showsLocation: showsLocation
+        )
     }
 
     private func metric(title: String, value: String) -> some View {
