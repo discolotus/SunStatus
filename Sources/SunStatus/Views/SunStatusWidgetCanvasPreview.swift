@@ -45,11 +45,9 @@ private struct SunStatusWidgetCanvasPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             header(compact: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 90,
-                daylightLayout: .proportional
+                scale: .widgetSmall
             )
         }
         .padding(14)
@@ -71,11 +69,9 @@ private struct SunStatusWidgetCanvasPreview: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 108,
-                daylightLayout: .proportional
+                scale: .widgetMedium
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
@@ -87,11 +83,9 @@ private struct SunStatusWidgetCanvasPreview: View {
         VStack(alignment: .leading, spacing: 14) {
             header(compact: false, showsLocation: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: true,
-                arcHeight: 126,
-                daylightLayout: .proportional
+                scale: .widgetLarge
             )
 
             HStack(alignment: .top, spacing: 12) {

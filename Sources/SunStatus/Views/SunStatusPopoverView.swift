@@ -41,13 +41,11 @@ struct SunStatusPopoverView: View {
 
             switch selectedPanel {
             case .arc:
-                SolarArcView(
+                SunStatusDynamicArcView(
                     status: status,
+                    scale: .widgetLarge,
                     previewProgress: arcPreviewDaylightProgress,
-                    previewDate: arcPreviewDate,
-                    showsTimeLabels: true,
-                    arcHeight: 126,
-                    daylightLayout: .proportional
+                    previewDate: arcPreviewDate
                 )
 
                 arcPreviewSlider
