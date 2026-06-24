@@ -9,7 +9,9 @@ enum SunStatusMain {
     @MainActor
     static func main() {
         #if DEBUG
-        if SunStatusPopoverEvidenceRenderer.renderIfRequested() {
+        let didRenderWidgetDropdownEvidence = SunStatusWidgetDropdownEvidenceRenderer.renderIfRequested()
+        let didRenderPopoverEvidence = SunStatusPopoverEvidenceRenderer.renderIfRequested()
+        if didRenderWidgetDropdownEvidence || didRenderPopoverEvidence {
             return
         }
         #endif
