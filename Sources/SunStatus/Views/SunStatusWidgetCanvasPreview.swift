@@ -19,6 +19,7 @@ private enum WidgetCanvasFamily {
 private struct SunStatusWidgetCanvasPreview: View {
     let status: DaylightStatus
     let family: WidgetCanvasFamily
+    var includesEvidenceBackdrop = true
 
     var body: some View {
         Group {
@@ -40,8 +41,8 @@ private struct SunStatusWidgetCanvasPreview: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
-        .padding(24)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(includesEvidenceBackdrop ? 24 : 0)
+        .background(includesEvidenceBackdrop ? Color(nsColor: .windowBackgroundColor) : Color.clear)
     }
 
     private var smallContent: some View {
@@ -219,23 +220,25 @@ private struct SunStatusWidgetCanvasPreview: View {
 
 private struct SunStatusWidgetDropdownEvidence: View {
     private let status = SunStatusWidgetCanvasPreviewData.cloudShiftStatus
+    private let panelBackground = Color(red: 0.95, green: 0.97, blue: 0.98)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 26) {
             Text("Widget dropdown with dynamic icons")
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
 
-            HStack(alignment: .top, spacing: 28) {
+            HStack(alignment: .top, spacing: 30) {
                 dropdownPanel
-                    .frame(width: 300)
+                    .frame(width: 292)
 
                 SunStatusWidgetCanvasPreview(
                     status: status,
-                    family: .medium
+                    family: .medium,
+                    includesEvidenceBackdrop: false
                 )
             }
         }
-        .padding(40)
+        .padding(46)
         .frame(width: 1_120, height: 640, alignment: .topLeading)
         .background(Color.white)
         .foregroundStyle(Color(red: 0.14, green: 0.15, blue: 0.17))
@@ -244,18 +247,19 @@ private struct SunStatusWidgetDropdownEvidence: View {
     private var dropdownPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Dynamic icon")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 10) {
-                SunStatusDynamicIcon(status: status, size: 34, variant: .orb)
+                SunStatusDynamicIcon(status: status, size: 30, variant: .orb)
+                    .frame(width: 44, height: 44)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Orb")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
 
                     Text("Selected for widgets")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
@@ -266,11 +270,11 @@ private struct SunStatusWidgetDropdownEvidence: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(.white, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.black.opacity(0.12), lineWidth: 1)
+                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
             }
 
             VStack(spacing: 0) {
@@ -286,20 +290,21 @@ private struct SunStatusWidgetDropdownEvidence: View {
             .background(.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.black.opacity(0.10), lineWidth: 1)
+                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
             }
             .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
         }
         .padding(18)
-        .background(Color(red: 0.96, green: 0.97, blue: 0.98), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(panelBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func dropdownRow(variant: SunStatusDynamicIconVariant) -> some View {
         HStack(spacing: 10) {
-            SunStatusDynamicIcon(status: status, size: 30, variant: variant)
+            SunStatusDynamicIcon(status: status, size: 26, variant: variant)
+                .frame(width: 40, height: 40)
 
             Text(variant.displayName)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
 
             Spacer(minLength: 0)
 
@@ -310,7 +315,7 @@ private struct SunStatusWidgetDropdownEvidence: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .background {
             if variant == .orb {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)

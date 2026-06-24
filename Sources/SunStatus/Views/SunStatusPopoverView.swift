@@ -30,22 +30,12 @@ struct SunStatusPopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             header
 
-            Picker("Panel", selection: $selectedPanel) {
-                ForEach(PopoverPanel.allCases, id: \.self) { panel in
-                    Label(panel.title, systemImage: panel.symbolName)
-                        .tag(panel)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-
             switch selectedPanel {
             case .arc:
                 SunStatusDynamicArcView(
                     status: status,
                     scale: .widgetLarge,
-                    previewProgress: arcPreviewDaylightProgress,
-                    previewDate: arcPreviewDate
+                    preview: dynamicArcPreview
                 )
 
                 arcPreviewSlider
@@ -80,14 +70,28 @@ struct SunStatusPopoverView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            SunStatusIdentityHeader(status: status, scale: .standard, showsLocation: true)
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                SunStatusIdentityHeader(status: headerStatus, scale: .standard, showsLocation: true)
 
-            Text(nextTransitionText)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .padding(.leading, 42)
+                Text(nextTransitionText)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .padding(.leading, 44)
+            }
+
+            Spacer(minLength: 8)
+
+            Picker("Panel", selection: $selectedPanel) {
+                ForEach(PopoverPanel.allCases, id: \.self) { panel in
+                    Label(panel.title, systemImage: panel.symbolName)
+                        .tag(panel)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 118)
         }
     }
 
@@ -183,6 +187,46 @@ struct SunStatusPopoverView: View {
 
     private var arcPreviewDaylightProgress: Double? {
         arcPreviewTimeline.daylightProgress(for: arcPreviewDate)
+    }
+
+    private var dynamicArcPreview: SunStatusDynamicArcView.Preview {
+        SunStatusDynamicArcView.Preview(progress: arcPreviewDaylightProgress, date: arcPreviewDate)
+    }
+
+    private var headerStatus: DaylightStatus {
+        guard selectedPanel == .arc else {
+            return status
+        }
+
+        let sample = arcPreviewSample
+        let score = arcBrightnessScore
+        let cloudCover = sample.cloudCover ?? status.brightness.cloudCover
+        let modifiers = modifiers(elevationDegrees: sample.elevationDegrees, cloudCover: cloudCover)
+
+        return DaylightStatus(
+            locationName: status.locationName,
+            timezone: status.timezone,
+            solar: SolarSnapshot(
+                date: arcPreviewDate,
+                location: status.solar.location,
+                sunrise: status.solar.sunrise,
+                solarNoon: status.solar.solarNoon,
+                sunset: status.solar.sunset,
+                elevationDegrees: sample.elevationDegrees,
+                azimuthDegrees: sample.azimuthDegrees,
+                daylightProgress: arcPreviewDaylightProgress
+            ),
+            brightness: BrightnessSnapshot(
+                date: arcPreviewDate,
+                score: score,
+                classification: brightnessClassification(score: score),
+                cloudCover: cloudCover,
+                uvIndex: status.brightness.uvIndex,
+                visibilityMeters: status.brightness.visibilityMeters,
+                modifiers: modifiers
+            ),
+            arcPoints: status.arcPoints
+        )
     }
 
     private var arcPreviewSliderMarkers: [TimelineSliderMarker] {
@@ -297,6 +341,21 @@ struct SunStatusPopoverView: View {
         }
 
         return min(max(clearSky * (1 - cloudCover * 0.80), 0.05), 1)
+    }
+
+    private func brightnessClassification(score: Double) -> BrightnessClassification {
+        switch score {
+        case ..<0.18:
+            return .dark
+        case 0.18..<0.38:
+            return .dim
+        case 0.38..<0.62:
+            return .muted
+        case 0.62..<0.86:
+            return .bright
+        default:
+            return .vivid
+        }
     }
 
     private func modifiers(elevationDegrees: Double, cloudCover: Double?) -> [BrightnessModifier] {

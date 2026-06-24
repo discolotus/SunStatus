@@ -1376,11 +1376,11 @@ private struct ProportionalDaylightArcGeometry {
     let dayFraction: Double
 
     var center: CGPoint {
-        CGPoint(x: size.width / 2, y: size.height / 2)
+        CGPoint(x: size.width / 2, y: size.height * 0.58)
     }
 
     var radius: CGFloat {
-        min(size.width * 0.44, size.height * 0.46)
+        min(size.width * 0.44, size.height * 0.43)
     }
 
     var dayAngle: CGFloat {

@@ -30,31 +30,53 @@ public enum SunStatusDynamicArcScale: Sendable {
 }
 
 public struct SunStatusDynamicArcView: View {
+    public struct Preview: Sendable {
+        let progress: Double?
+        let date: Date
+
+        public init(progress: Double?, date: Date) {
+            self.progress = progress
+            self.date = date
+        }
+    }
+
     private let status: DaylightStatus
     private let scale: SunStatusDynamicArcScale
-    private let previewProgress: Double?
-    private let previewDate: Date?
+    private let preview: Preview?
     private let showsTimeLabelsOverride: Bool?
 
     public init(
         status: DaylightStatus,
         scale: SunStatusDynamicArcScale,
-        previewProgress: Double? = nil,
-        previewDate: Date? = nil,
+        preview: Preview? = nil,
         showsTimeLabels: Bool? = nil
     ) {
         self.status = status
         self.scale = scale
-        self.previewProgress = previewProgress
-        self.previewDate = previewDate
+        self.preview = preview
         self.showsTimeLabelsOverride = showsTimeLabels
+    }
+
+    public init(
+        status: DaylightStatus,
+        scale: SunStatusDynamicArcScale,
+        previewProgress: Double?,
+        previewDate: Date,
+        showsTimeLabels: Bool? = nil
+    ) {
+        self.init(
+            status: status,
+            scale: scale,
+            preview: Preview(progress: previewProgress, date: previewDate),
+            showsTimeLabels: showsTimeLabels
+        )
     }
 
     public var body: some View {
         SolarArcView(
             status: status,
-            previewProgress: previewProgress,
-            previewDate: previewDate,
+            previewProgress: preview?.progress,
+            previewDate: preview?.date,
             showsTimeLabels: showsTimeLabelsOverride ?? scale.showsTimeLabels,
             arcHeight: scale.arcHeight,
             daylightLayout: .proportional
