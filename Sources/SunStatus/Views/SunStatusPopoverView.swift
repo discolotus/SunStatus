@@ -44,7 +44,10 @@ struct SunStatusPopoverView: View {
                 SolarArcView(
                     status: status,
                     previewProgress: arcPreviewDaylightProgress,
-                    previewDate: arcPreviewDate
+                    previewDate: arcPreviewDate,
+                    showsTimeLabels: true,
+                    arcHeight: 126,
+                    daylightLayout: .proportional
                 )
 
                 arcPreviewSlider
@@ -561,13 +564,29 @@ enum SunStatusPopoverEvidenceRenderer {
 
         do {
             let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            let outputURL = root.appendingPathComponent("screenshots/pr-evidence/popover-night-canvas.png")
+            let outputDirectory = root.appendingPathComponent("screenshots/pr-evidence")
             try FileManager.default.createDirectory(
-                at: outputURL.deletingLastPathComponent(),
+                at: outputDirectory,
                 withIntermediateDirectories: true
             )
-            try render(outputURL: outputURL)
-            print("Wrote \(outputURL.path)")
+
+            let cloudShiftURL = outputDirectory.appendingPathComponent("popover-cloud-shift-canvas.png")
+            try render(
+                outputURL: cloudShiftURL,
+                title: "Popover cloud-shift canvas",
+                status: SunStatusPopoverPreviewData.cloudShiftStatus,
+                isPinned: false
+            )
+            print("Wrote \(cloudShiftURL.path)")
+
+            let nightURL = outputDirectory.appendingPathComponent("popover-night-canvas.png")
+            try render(
+                outputURL: nightURL,
+                title: "Popover night canvas",
+                status: SunStatusPopoverPreviewData.nightStatus,
+                isPinned: true
+            )
+            print("Wrote \(nightURL.path)")
             return true
         } catch {
             fputs("Failed to render popover PR evidence: \(error)\n", stderr)
@@ -576,11 +595,11 @@ enum SunStatusPopoverEvidenceRenderer {
     }
 
     @MainActor
-    private static func render(outputURL: URL) throws {
+    private static func render(outputURL: URL, title: String, status: DaylightStatus, isPinned: Bool) throws {
         let content = SunStatusPopoverCanvasPreview(
-            title: "Popover night canvas",
-            status: SunStatusPopoverPreviewData.nightStatus,
-            isPinned: true
+            title: title,
+            status: status,
+            isPinned: isPinned
         )
         .frame(width: 520, height: 760)
         .environment(\.colorScheme, .dark)
