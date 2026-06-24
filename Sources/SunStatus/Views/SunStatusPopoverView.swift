@@ -78,16 +78,8 @@ struct SunStatusPopoverView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(radialGradient)
-                    .frame(width: 52, height: 52)
-
-                Image(systemName: symbolName)
-                    .font(.system(size: 25, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
-            }
+            SunStatusDynamicIcon(status: status, size: 58, variant: .orb)
+                .frame(width: 58, height: 58)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(status.brightness.classification.displayName)
@@ -103,34 +95,6 @@ struct SunStatusPopoverView: View {
             }
 
             Spacer()
-        }
-    }
-
-    private var radialGradient: RadialGradient {
-        switch status.brightness.classification {
-        case .dark:
-            RadialGradient(colors: [.indigo, .black.opacity(0.82)], center: .center, startRadius: 2, endRadius: 40)
-        case .dim:
-            RadialGradient(colors: [.cyan.opacity(0.75), .indigo.opacity(0.9)], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .muted:
-            RadialGradient(colors: [.yellow.opacity(0.72), .gray.opacity(0.72)], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .bright:
-            RadialGradient(colors: [.yellow, .orange], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .vivid:
-            RadialGradient(colors: [.white, .yellow, .orange], center: .topLeading, startRadius: 1, endRadius: 48)
-        }
-    }
-
-    private var symbolName: String {
-        switch status.brightness.classification {
-        case .dark:
-            "moon.stars.fill"
-        case .dim:
-            "sun.horizon.fill"
-        case .muted:
-            "cloud.sun.fill"
-        case .bright, .vivid:
-            "sun.max.fill"
         }
     }
 
@@ -505,6 +469,96 @@ private struct TimelineSliderPreviewHost: View {
     }
 }
 
+private struct SunStatusPopoverCanvasPreview: View {
+    let title: String
+    let status: DaylightStatus
+    var isPinned = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+
+            SunStatusPopoverView(
+                status: status,
+                isPinned: isPinned,
+                contentHeight: 560,
+                onQuit: {}
+            )
+            .background(.ultraThinMaterial, in: PopoverPreviewShape())
+            .overlay {
+                PopoverPreviewShape()
+                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.34), radius: 28, y: 14)
+        }
+        .padding(34)
+        .background {
+            ZStack {
+                Color.black
+
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.10),
+                        Color.indigo.opacity(0.16),
+                        Color.black.opacity(0.0)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        }
+    }
+}
+
+private struct PopoverPreviewShape: InsettableShape {
+    var insetAmount: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let radius: CGFloat = 22
+        let notchWidth: CGFloat = 42
+        let notchHeight: CGFloat = 18
+        let midX = rect.midX
+        let minX = rect.minX + insetAmount
+        let maxX = rect.maxX - insetAmount
+        let minY = rect.minY + insetAmount
+        let maxY = rect.maxY - insetAmount
+
+        path.move(to: CGPoint(x: minX + radius, y: minY))
+        path.addLine(to: CGPoint(x: midX - notchWidth * 0.5, y: minY))
+        path.addQuadCurve(
+            to: CGPoint(x: midX - notchWidth * 0.25, y: minY - notchHeight * 0.55),
+            control: CGPoint(x: midX - notchWidth * 0.42, y: minY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: midX + notchWidth * 0.25, y: minY - notchHeight * 0.55),
+            control: CGPoint(x: midX, y: minY - notchHeight)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: midX + notchWidth * 0.5, y: minY),
+            control: CGPoint(x: midX + notchWidth * 0.42, y: minY)
+        )
+        path.addLine(to: CGPoint(x: maxX - radius, y: minY))
+        path.addQuadCurve(to: CGPoint(x: maxX, y: minY + radius), control: CGPoint(x: maxX, y: minY))
+        path.addLine(to: CGPoint(x: maxX, y: maxY - radius))
+        path.addQuadCurve(to: CGPoint(x: maxX - radius, y: maxY), control: CGPoint(x: maxX, y: maxY))
+        path.addLine(to: CGPoint(x: minX + radius, y: maxY))
+        path.addQuadCurve(to: CGPoint(x: minX, y: maxY - radius), control: CGPoint(x: minX, y: maxY))
+        path.addLine(to: CGPoint(x: minX, y: minY + radius))
+        path.addQuadCurve(to: CGPoint(x: minX + radius, y: minY), control: CGPoint(x: minX, y: minY))
+        path.closeSubpath()
+
+        return path
+    }
+
+    func inset(by amount: CGFloat) -> some InsettableShape {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
+    }
+}
+
 #Preview("Popover - Cloud Shift", traits: .sizeThatFitsLayout) {
     SunStatusPopoverView(
         status: SunStatusPopoverPreviewData.cloudShiftStatus,
@@ -519,6 +573,21 @@ private struct TimelineSliderPreviewHost: View {
         isPinned: true,
         contentHeight: 560,
         onQuit: {}
+    )
+}
+
+#Preview("Popover Night Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverCanvasPreview(
+        title: "Popover night canvas",
+        status: SunStatusPopoverPreviewData.nightStatus,
+        isPinned: true
+    )
+}
+
+#Preview("Popover Cloud Shift Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverCanvasPreview(
+        title: "Popover cloud-shift canvas",
+        status: SunStatusPopoverPreviewData.cloudShiftStatus
     )
 }
 
