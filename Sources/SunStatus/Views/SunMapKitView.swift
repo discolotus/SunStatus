@@ -506,6 +506,11 @@ struct SunMapKitView: NSViewRepresentable {
 private extension SunMapKitView {
     var followsUserLocation: Bool {
         let arguments = ProcessInfo.processInfo.arguments
+        let environment = ProcessInfo.processInfo.environment
+        if environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return false
+        }
+
         return !arguments.contains("--readme-screenshots")
             && !arguments.contains("--generic-location")
     }
@@ -563,6 +568,29 @@ enum SunMapKitViewMode {
         }
     }
 }
+
+#if DEBUG
+private enum SunMapKitViewPreviewData {
+    static let status = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+    static let samples = SunPathGeometry.samples(from: status.arcPoints)
+
+    static var selectedSample: SunPathSample3D {
+        SunPathGeometry.sample(at: 0.68, arcPoints: status.arcPoints, fallback: status.solar)
+    }
+}
+
+#Preview("MapKit Sun Path", traits: .sizeThatFitsLayout) {
+    SunMapKitView(
+        centerCoordinate: SunMapKitViewPreviewData.status.solar.location,
+        pathSamples: SunMapKitViewPreviewData.samples,
+        selectedSample: SunMapKitViewPreviewData.selectedSample,
+        mode: .compact
+    )
+    .frame(width: 360, height: 240)
+    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .padding(20)
+}
+#endif
 
 fileprivate struct SunMapKitLaunchCamera {
     var heading: CLLocationDirection

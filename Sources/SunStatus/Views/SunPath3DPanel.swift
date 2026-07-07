@@ -262,3 +262,49 @@ private struct MapRecenterButton: View {
         .help("Center map on current location")
     }
 }
+
+#if DEBUG
+private enum SunPath3DPanelPreviewData {
+    static let status = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+}
+
+#Preview("3D Panel - Compact", traits: .sizeThatFitsLayout) {
+    SunPath3DPanel(
+        status: SunPath3DPanelPreviewData.status,
+        mapHeight: 240
+    )
+    .frame(width: 360)
+    .padding(20)
+}
+
+#Preview("3D Panel - Expanded", traits: .sizeThatFitsLayout) {
+    SunPath3DPanel(
+        status: SunPath3DPanelPreviewData.status,
+        mapHeight: 420,
+        showsExpandButton: false,
+        mapMode: .expanded
+    )
+    .frame(width: 760)
+    .padding(20)
+}
+
+#Preview("Angle Tiles", traits: .sizeThatFitsLayout) {
+    Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+        GridRow {
+            AngleTile(title: "Elevation", value: "68 deg", symbolName: "arrow.up.right")
+            AngleTile(title: "Azimuth", value: "SW 214 deg", symbolName: "location.north.line")
+        }
+    }
+    .padding(20)
+}
+
+#Preview("Map Controls", traits: .sizeThatFitsLayout) {
+    HStack(spacing: 12) {
+        MapExpandButton(action: {})
+        MapRecenterButton(action: {})
+    }
+    .padding(20)
+    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .padding(20)
+}
+#endif

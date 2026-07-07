@@ -1,5 +1,7 @@
 import AppKit
+import ImageIO
 import SwiftUI
+import UniformTypeIdentifiers
 #if canImport(SunStatusCore)
 import SunStatusCore
 #endif
@@ -21,24 +23,20 @@ struct SunStatusPopoverView: View {
     }
 
     @State private var selectedPanel: PopoverPanel = .arc
-    @State private var arcPreviewProgress = 0.5
+    @State private var arcPreviewTimelineProgress = 0.5
+    @State private var isScrubbingArcPreview = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
 
-            Picker("Panel", selection: $selectedPanel) {
-                ForEach(PopoverPanel.allCases, id: \.self) { panel in
-                    Label(panel.title, systemImage: panel.symbolName)
-                        .tag(panel)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-
             switch selectedPanel {
             case .arc:
-                SolarArcView(status: status, previewProgress: arcPreviewProgress)
+                SunStatusDynamicArcView(
+                    status: status,
+                    scale: .widgetLarge,
+                    preview: dynamicArcPreview
+                )
 
                 arcPreviewSlider
 
@@ -60,68 +58,40 @@ struct SunStatusPopoverView: View {
         .padding(14)
         .frame(width: 380, height: contentHeight, alignment: .topLeading)
         .onAppear {
-            arcPreviewProgress = status.solar.daylightProgress ?? 0.5
+            arcPreviewTimelineProgress = arcPreviewTimeline.currentProgress
         }
         .onChange(of: status.solar.date) { _, _ in
-            arcPreviewProgress = status.solar.daylightProgress ?? arcPreviewProgress
+            guard !isScrubbingArcPreview else {
+                return
+            }
+
+            arcPreviewTimelineProgress = arcPreviewTimeline.currentProgress
         }
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(radialGradient)
-                    .frame(width: 52, height: 52)
-
-                Image(systemName: symbolName)
-                    .font(.system(size: 25, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(status.brightness.classification.displayName)
-                    .font(.system(size: 21, weight: .semibold, design: .rounded))
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                SunStatusIdentityHeader(status: headerStatus, scale: .standard, showsLocation: true)
 
                 Text(nextTransitionText)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
-
-                Text(status.locationName)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .padding(.leading, 44)
             }
 
-            Spacer()
-        }
-    }
+            Spacer(minLength: 8)
 
-    private var radialGradient: RadialGradient {
-        switch status.brightness.classification {
-        case .dark:
-            RadialGradient(colors: [.indigo, .black.opacity(0.82)], center: .center, startRadius: 2, endRadius: 40)
-        case .dim:
-            RadialGradient(colors: [.cyan.opacity(0.75), .indigo.opacity(0.9)], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .muted:
-            RadialGradient(colors: [.yellow.opacity(0.72), .gray.opacity(0.72)], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .bright:
-            RadialGradient(colors: [.yellow, .orange], center: .topLeading, startRadius: 3, endRadius: 46)
-        case .vivid:
-            RadialGradient(colors: [.white, .yellow, .orange], center: .topLeading, startRadius: 1, endRadius: 48)
-        }
-    }
-
-    private var symbolName: String {
-        switch status.brightness.classification {
-        case .dark:
-            "moon.stars.fill"
-        case .dim:
-            "sun.horizon.fill"
-        case .muted:
-            "cloud.sun.fill"
-        case .bright, .vivid:
-            "sun.max.fill"
+            Picker("Panel", selection: $selectedPanel) {
+                ForEach(PopoverPanel.allCases, id: \.self) { panel in
+                    Label(panel.title, systemImage: panel.symbolName)
+                        .tag(panel)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 118)
         }
     }
 
@@ -143,14 +113,18 @@ struct SunStatusPopoverView: View {
             }
             .font(.caption.weight(.medium))
 
-            Slider(value: $arcPreviewProgress, in: 0...1) {
-                Text("Preview time")
-            }
+            TimelineSlider(
+                progress: $arcPreviewTimelineProgress,
+                markers: arcPreviewSliderMarkers,
+                onEditingChanged: { isEditing in
+                    isScrubbingArcPreview = isEditing
+                }
+            )
 
             HStack {
-                Text(timeText(status.arcPoints.first?.date ?? status.solar.sunrise))
+                Text(timeText(arcPreviewTimeline.startDate))
                 Spacer()
-                Text(timeText(status.arcPoints.last?.date ?? status.solar.sunset))
+                Text(timeText(arcPreviewTimeline.endDate))
             }
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
@@ -186,7 +160,84 @@ struct SunStatusPopoverView: View {
     }
 
     private var arcPreviewSample: SunPathSample3D {
-        SunPathGeometry.sample(at: arcPreviewProgress, arcPoints: status.arcPoints, fallback: status.solar)
+        if let arcPreviewDaylightProgress {
+            return SunPathGeometry.sample(at: arcPreviewDaylightProgress, arcPoints: status.arcPoints, fallback: status.solar)
+        }
+
+        let position = SolarPositionCalculator.position(at: arcPreviewDate, coordinate: status.solar.location)
+        let cloudCover = status.brightness.cloudCover
+
+        return SunPathSample3D(
+            date: arcPreviewDate,
+            progress: arcPreviewTimelineProgress,
+            elevationDegrees: position.elevationDegrees,
+            azimuthDegrees: position.azimuthDegrees,
+            brightnessScore: brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover),
+            cloudCover: cloudCover
+        )
+    }
+
+    private var arcPreviewTimeline: SunPathPreviewTimeline {
+        SunPathPreviewTimeline(status: status)
+    }
+
+    private var arcPreviewDate: Date {
+        arcPreviewTimeline.date(at: arcPreviewTimelineProgress)
+    }
+
+    private var arcPreviewDaylightProgress: Double? {
+        arcPreviewTimeline.daylightProgress(for: arcPreviewDate)
+    }
+
+    private var dynamicArcPreview: SunStatusDynamicArcView.Preview {
+        SunStatusDynamicArcView.Preview(progress: arcPreviewDaylightProgress, date: arcPreviewDate)
+    }
+
+    private var headerStatus: DaylightStatus {
+        guard selectedPanel == .arc else {
+            return status
+        }
+
+        let sample = arcPreviewSample
+        let score = arcBrightnessScore
+        let cloudCover = sample.cloudCover ?? status.brightness.cloudCover
+        let modifiers = modifiers(elevationDegrees: sample.elevationDegrees, cloudCover: cloudCover)
+
+        return DaylightStatus(
+            locationName: status.locationName,
+            timezone: status.timezone,
+            solar: SolarSnapshot(
+                date: arcPreviewDate,
+                location: status.solar.location,
+                sunrise: status.solar.sunrise,
+                solarNoon: status.solar.solarNoon,
+                sunset: status.solar.sunset,
+                elevationDegrees: sample.elevationDegrees,
+                azimuthDegrees: sample.azimuthDegrees,
+                daylightProgress: arcPreviewDaylightProgress
+            ),
+            brightness: BrightnessSnapshot(
+                date: arcPreviewDate,
+                score: score,
+                classification: brightnessClassification(score: score),
+                cloudCover: cloudCover,
+                uvIndex: status.brightness.uvIndex,
+                visibilityMeters: status.brightness.visibilityMeters,
+                modifiers: modifiers
+            ),
+            arcPoints: status.arcPoints
+        )
+    }
+
+    private var arcPreviewSliderMarkers: [TimelineSliderMarker] {
+        [
+            arcPreviewTimeline.daylightStartProgress.map {
+                TimelineSliderMarker(id: "sunrise", progress: $0, color: .orange.opacity(0.88))
+            },
+            arcPreviewTimeline.daylightEndProgress.map {
+                TimelineSliderMarker(id: "sunset", progress: $0, color: .secondary.opacity(0.55))
+            }
+        ].compactMap { $0 }
     }
 
     private var arcBrightnessScore: Double {
@@ -292,6 +343,21 @@ struct SunStatusPopoverView: View {
         return min(max(clearSky * (1 - cloudCover * 0.80), 0.05), 1)
     }
 
+    private func brightnessClassification(score: Double) -> BrightnessClassification {
+        switch score {
+        case ..<0.18:
+            return .dark
+        case 0.18..<0.38:
+            return .dim
+        case 0.38..<0.62:
+            return .muted
+        case 0.62..<0.86:
+            return .bright
+        default:
+            return .vivid
+        }
+    }
+
     private func modifiers(elevationDegrees: Double, cloudCover: Double?) -> [BrightnessModifier] {
         var result: [BrightnessModifier] = []
 
@@ -378,3 +444,310 @@ private struct MetricTile: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
+
+private struct TimelineSliderMarker: Identifiable {
+    let id: String
+    let progress: Double
+    let color: Color
+}
+
+private struct TimelineSlider: View {
+    @Binding var progress: Double
+    let markers: [TimelineSliderMarker]
+    var onEditingChanged: (Bool) -> Void = { _ in }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Slider(value: $progress, in: 0...1, onEditingChanged: onEditingChanged) {
+                Text("Preview time")
+            }
+            .labelsHidden()
+
+            GeometryReader { proxy in
+                ForEach(markers) { marker in
+                    Rectangle()
+                        .fill(marker.color)
+                        .frame(width: 2, height: 20)
+                        .clipShape(Capsule())
+                        .offset(x: markerOffset(for: marker.progress, width: proxy.size.width), y: 2)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .frame(height: 24)
+    }
+
+    private func markerOffset(for progress: Double, width: CGFloat) -> CGFloat {
+        let clampedProgress = min(max(progress, 0), 1)
+        return min(max((width * clampedProgress) - 1, 0), max(width - 2, 0))
+    }
+}
+
+#if DEBUG
+private enum SunStatusPopoverPreviewData {
+    static let cloudShiftStatus = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+
+    static var nightStatus: DaylightStatus {
+        let timezone = TimeZone(identifier: "America/Los_Angeles") ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+
+        let date = calendar.date(from: DateComponents(
+            timeZone: timezone,
+            year: 2026,
+            month: 6,
+            day: 21,
+            hour: 22,
+            minute: 15
+        )) ?? Date(timeIntervalSince1970: 1_782_025_000)
+
+        return MockDaylightProvider(timezone: timezone).status(at: date)
+    }
+}
+
+private struct TimelineSliderPreviewHost: View {
+    @State private var progress = 0.55
+
+    var body: some View {
+        TimelineSlider(
+            progress: $progress,
+            markers: [
+                TimelineSliderMarker(id: "sunrise", progress: 0.22, color: .orange),
+                TimelineSliderMarker(id: "sunset", progress: 0.78, color: .secondary)
+            ]
+        )
+        .frame(width: 300)
+        .padding(20)
+    }
+}
+
+private struct SunStatusPopoverCanvasPreview: View {
+    let title: String
+    let status: DaylightStatus
+    var isPinned = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+
+            SunStatusPopoverView(
+                status: status,
+                isPinned: isPinned,
+                contentHeight: 560,
+                onQuit: {}
+            )
+            .background(.ultraThinMaterial, in: PopoverPreviewShape())
+            .overlay {
+                PopoverPreviewShape()
+                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.34), radius: 28, y: 14)
+        }
+        .padding(34)
+        .background {
+            ZStack {
+                Color.black
+
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.10),
+                        Color.indigo.opacity(0.16),
+                        Color.black.opacity(0.0)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        }
+    }
+}
+
+private struct PopoverPreviewShape: InsettableShape {
+    var insetAmount: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let radius: CGFloat = 22
+        let notchWidth: CGFloat = 42
+        let notchHeight: CGFloat = 18
+        let midX = rect.midX
+        let minX = rect.minX + insetAmount
+        let maxX = rect.maxX - insetAmount
+        let minY = rect.minY + insetAmount
+        let maxY = rect.maxY - insetAmount
+
+        path.move(to: CGPoint(x: minX + radius, y: minY))
+        path.addLine(to: CGPoint(x: midX - notchWidth * 0.5, y: minY))
+        path.addQuadCurve(
+            to: CGPoint(x: midX - notchWidth * 0.25, y: minY - notchHeight * 0.55),
+            control: CGPoint(x: midX - notchWidth * 0.42, y: minY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: midX + notchWidth * 0.25, y: minY - notchHeight * 0.55),
+            control: CGPoint(x: midX, y: minY - notchHeight)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: midX + notchWidth * 0.5, y: minY),
+            control: CGPoint(x: midX + notchWidth * 0.42, y: minY)
+        )
+        path.addLine(to: CGPoint(x: maxX - radius, y: minY))
+        path.addQuadCurve(to: CGPoint(x: maxX, y: minY + radius), control: CGPoint(x: maxX, y: minY))
+        path.addLine(to: CGPoint(x: maxX, y: maxY - radius))
+        path.addQuadCurve(to: CGPoint(x: maxX - radius, y: maxY), control: CGPoint(x: maxX, y: maxY))
+        path.addLine(to: CGPoint(x: minX + radius, y: maxY))
+        path.addQuadCurve(to: CGPoint(x: minX, y: maxY - radius), control: CGPoint(x: minX, y: maxY))
+        path.addLine(to: CGPoint(x: minX, y: minY + radius))
+        path.addQuadCurve(to: CGPoint(x: minX + radius, y: minY), control: CGPoint(x: minX, y: minY))
+        path.closeSubpath()
+
+        return path
+    }
+
+    func inset(by amount: CGFloat) -> some InsettableShape {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
+    }
+}
+
+enum SunStatusPopoverEvidenceRenderer {
+    @MainActor
+    static func renderIfRequested() -> Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--render-popover-pr-evidence") else {
+            return false
+        }
+
+        do {
+            let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            let outputDirectory = root.appendingPathComponent("screenshots/pr-evidence")
+            try FileManager.default.createDirectory(
+                at: outputDirectory,
+                withIntermediateDirectories: true
+            )
+
+            let cloudShiftURL = outputDirectory.appendingPathComponent("popover-cloud-shift-canvas.png")
+            try render(
+                outputURL: cloudShiftURL,
+                title: "Popover cloud-shift canvas",
+                status: SunStatusPopoverPreviewData.cloudShiftStatus,
+                isPinned: false
+            )
+            print("Wrote \(cloudShiftURL.path)")
+
+            let nightURL = outputDirectory.appendingPathComponent("popover-night-canvas.png")
+            try render(
+                outputURL: nightURL,
+                title: "Popover night canvas",
+                status: SunStatusPopoverPreviewData.nightStatus,
+                isPinned: true
+            )
+            print("Wrote \(nightURL.path)")
+            return true
+        } catch {
+            fputs("Failed to render popover PR evidence: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+
+    @MainActor
+    private static func render(outputURL: URL, title: String, status: DaylightStatus, isPinned: Bool) throws {
+        let content = SunStatusPopoverCanvasPreview(
+            title: title,
+            status: status,
+            isPinned: isPinned
+        )
+        .frame(width: 520, height: 760)
+        .environment(\.colorScheme, .dark)
+        .tint(.blue)
+
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 520, height: 760)
+        hostingView.wantsLayer = true
+        hostingView.layoutSubtreeIfNeeded()
+
+        guard let representation = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) else {
+            throw RenderError.missingImage
+        }
+        representation.size = hostingView.bounds.size
+        hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+
+        let image = NSImage(size: hostingView.bounds.size)
+        image.addRepresentation(representation)
+
+        guard let tiffData = image.tiffRepresentation,
+              let source = CGImageSourceCreateWithData(tiffData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        else {
+            throw RenderError.missingImage
+        }
+
+        try writePNG(cgImage, to: outputURL)
+    }
+
+    private static func writePNG(_ image: CGImage, to url: URL) throws {
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+            throw RenderError.missingDestination
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw RenderError.writeFailed
+        }
+    }
+
+    private enum RenderError: Error {
+        case missingImage
+        case missingDestination
+        case writeFailed
+    }
+}
+
+#Preview("Popover - Cloud Shift", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverView(
+        status: SunStatusPopoverPreviewData.cloudShiftStatus,
+        contentHeight: 560,
+        onQuit: {}
+    )
+}
+
+#Preview("Popover - Night", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverView(
+        status: SunStatusPopoverPreviewData.nightStatus,
+        isPinned: true,
+        contentHeight: 560,
+        onQuit: {}
+    )
+}
+
+#Preview("Popover Night Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverCanvasPreview(
+        title: "Popover night canvas",
+        status: SunStatusPopoverPreviewData.nightStatus,
+        isPinned: true
+    )
+}
+
+#Preview("Popover Cloud Shift Canvas", traits: .sizeThatFitsLayout) {
+    SunStatusPopoverCanvasPreview(
+        title: "Popover cloud-shift canvas",
+        status: SunStatusPopoverPreviewData.cloudShiftStatus
+    )
+}
+
+#Preview("Popover Metric Tiles", traits: .sizeThatFitsLayout) {
+    Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+        GridRow {
+            MetricTile(title: "Brightness", value: "82%", symbolName: "circle.lefthalf.filled")
+            MetricTile(title: "Clouds", value: "97%", symbolName: "cloud")
+        }
+    }
+    .padding(20)
+}
+
+#Preview("Timeline Slider", traits: .sizeThatFitsLayout) {
+    TimelineSliderPreviewHost()
+}
+#endif

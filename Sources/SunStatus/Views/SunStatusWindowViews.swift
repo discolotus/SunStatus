@@ -68,3 +68,18 @@ struct ExpandedSunMapWindowView: View {
         )
     }
 }
+
+#if DEBUG
+private enum SunStatusWindowPreviewData {
+    static let status = SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus
+}
+
+#Preview("Pinned SunStatus Window", traits: .sizeThatFitsLayout) {
+    PinnedSunStatusWindowView(status: SunStatusWindowPreviewData.status)
+}
+
+#Preview("Expanded Sun Map Window", traits: .sizeThatFitsLayout) {
+    ExpandedSunMapWindowView(status: SunStatusWindowPreviewData.status)
+        .frame(width: 980, height: 820)
+}
+#endif

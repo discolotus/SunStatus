@@ -16,15 +16,56 @@ settings:
     SDKROOT: macosx
     SWIFT_VERSION: "6.0"
 targets:
+  SunStatusCore:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/SunStatusCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatusCore
+        PRODUCT_NAME: SunStatusCore
+        SKIP_INSTALL: YES
+  SunStatusUI:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/SunStatusUI
+    dependencies:
+      - target: SunStatusCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatusUI
+        PRODUCT_NAME: SunStatusUI
+        SKIP_INSTALL: YES
+  SunStatusCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/SunStatusCoreTests
+    dependencies:
+      - target: SunStatusCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatusCoreTests
+        PRODUCT_NAME: SunStatusCoreTests
   SunStatus:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
     sources:
       - path: Sources/SunStatus
-      - path: Sources/SunStatusCore
-      - path: Sources/SunStatusUI
     dependencies:
+      - target: SunStatusCore
+        embed: true
+      - target: SunStatusUI
+        embed: true
       - target: SunStatusWidgetExtension
         embed: true
     info:
@@ -88,8 +129,11 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Sources/SunStatusWidgetExtension
-      - path: Sources/SunStatusCore
-      - path: Sources/SunStatusUI
+    dependencies:
+      - target: SunStatusCore
+        embed: true
+      - target: SunStatusUI
+        embed: true
     info:
       path: Config/SunStatusWidgetExtension-Info.plist
       properties:
@@ -128,9 +172,18 @@ schemes:
     build:
       targets:
         SunStatus: all
+        SunStatusCoreTests:
+          - test
+    test:
+      config: Debug
+      targets:
+        - SunStatusCoreTests
     run:
       config: Debug
       executable: SunStatus
+      commandLineArguments:
+        "--cloud-shift": false
+        "--allow-multiple-instances": false
     profile:
       config: Release
       executable: SunStatus

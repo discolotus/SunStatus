@@ -52,7 +52,7 @@ public struct MockDaylightProvider: DaylightProviding {
             timezone: timezone,
             solar: solar,
             brightness: brightness,
-            arcPoints: arcPoints(for: date, calendar: calendar),
+            arcPoints: arcPoints(for: arcDate(for: date, sunset: sunset, calendar: calendar), calendar: calendar),
         )
     }
 
@@ -130,6 +130,14 @@ public struct MockDaylightProvider: DaylightProviding {
         default:
             return [.goldenLight, .lightClouds, .clearVisibility]
         }
+    }
+
+    private func arcDate(for date: Date, sunset: Date?, calendar: Calendar) -> Date {
+        guard let sunset, date > sunset else {
+            return date
+        }
+
+        return calendar.date(byAdding: .day, value: 1, to: date) ?? date.addingTimeInterval(86_400)
     }
 
     private func arcPoints(for date: Date, calendar: Calendar) -> [SunArcPoint] {

@@ -4,6 +4,9 @@ import SwiftUI
 #if canImport(SunStatusCore)
 import SunStatusCore
 #endif
+#if canImport(SunStatusUI)
+import SunStatusUI
+#endif
 
 @MainActor
 final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
@@ -28,6 +31,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         configurePopover()
         configureStatusButton()
         configureProviderUpdates()
+        configureManualLocationUpdates()
         refresh()
 
         timer = Timer.scheduledTimer(
@@ -45,8 +49,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             return
         }
 
-        button.image = NSImage(systemSymbolName: "sun.max.fill", accessibilityDescription: "SunStatus")
-        button.image?.isTemplate = true
         button.imagePosition = .imageLeading
         button.toolTip = "SunStatus"
         button.target = self
@@ -71,14 +73,30 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         refreshingProvider.start()
     }
 
+    private func configureManualLocationUpdates() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(manualLocationSettingsDidChange),
+            name: .sunStatusManualLocationSettingsDidChange,
+            object: nil
+        )
+    }
+
     @objc private func refreshFromTimer() {
         refresh()
     }
 
+    @objc private func manualLocationSettingsDidChange() {
+        refresh()
+    }
+
     private func refresh() {
+        refreshActiveOverrideWeather()
         let status = currentStatus()
 
         if let button = statusItem.button {
+            button.image = statusItemIcon(for: status)
+            button.image?.isTemplate = false
             button.title = menuTitle(for: status)
             button.setAccessibilityLabel(accessibilityLabel(for: status))
         }
@@ -251,6 +269,16 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     private func currentStatus(at date: Date = .now) -> DaylightStatus {
+        if let manualLocation = manualLocationPreference() {
+            return SolarDaylightProvider(
+                locationName: manualLocation.name,
+                coordinate: manualLocation.coordinate,
+                timezone: manualLocation.timeZone,
+                weather: weather(for: manualLocation.coordinate)
+            )
+            .status(at: date)
+        }
+
         guard let selectedLocationCoordinate else {
             return provider.status(at: date)
         }
@@ -259,7 +287,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             locationName: "Current Location",
             coordinate: selectedLocationCoordinate,
             timezone: .current,
-            weather: selectedLocationWeather
+            weather: weather(for: selectedLocationCoordinate)
         )
         .status(at: date)
     }
@@ -296,6 +324,10 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
             return
         }
 
+        if shouldClearSelectedLocationWeather(for: coordinate) {
+            selectedLocationWeather = nil
+        }
+
         selectedLocationWeatherCoordinate = coordinate
         selectedLocationWeatherTask?.cancel()
 
@@ -309,8 +341,8 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
 
             await MainActor.run { [weak self] in
                 guard let self,
-                      let selectedLocationCoordinate = self.selectedLocationCoordinate,
-                      self.distance(from: selectedLocationCoordinate, to: coordinate) <= 250 else {
+                      let activeOverrideCoordinate = self.activeOverrideCoordinate(),
+                      self.distance(from: activeOverrideCoordinate, to: coordinate) <= 250 else {
                     return
                 }
 
@@ -318,6 +350,52 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
                 self.refresh()
             }
         }
+    }
+
+    private func refreshActiveOverrideWeather() {
+        guard let coordinate = activeOverrideCoordinate() else {
+            return
+        }
+
+        refreshSelectedLocationWeather(for: coordinate)
+    }
+
+    private func activeOverrideCoordinate() -> Coordinate? {
+        manualLocationPreference()?.coordinate ?? selectedLocationCoordinate
+    }
+
+    private func weather(for coordinate: Coordinate) -> WeatherSnapshot? {
+        guard let selectedLocationWeatherCoordinate,
+              distance(from: selectedLocationWeatherCoordinate, to: coordinate) <= 250 else {
+            return nil
+        }
+
+        return selectedLocationWeather
+    }
+
+    private func manualLocationPreference() -> ManualLocationPreference? {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: ManualLocationPreference.Keys.isEnabled),
+              defaults.bool(forKey: ManualLocationPreference.Keys.isSet) else {
+            return nil
+        }
+
+        let latitude = defaults.double(forKey: ManualLocationPreference.Keys.latitude)
+        let longitude = defaults.double(forKey: ManualLocationPreference.Keys.longitude)
+        guard (-90...90).contains(latitude), (-180...180).contains(longitude) else {
+            return nil
+        }
+
+        let name = defaults.string(forKey: ManualLocationPreference.Keys.name)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let timeZoneIdentifier = defaults.string(forKey: ManualLocationPreference.Keys.timeZoneIdentifier)
+        let timeZone = timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? .current
+
+        return ManualLocationPreference(
+            name: name?.isEmpty == false ? name! : "Manual Location",
+            coordinate: Coordinate(latitude: latitude, longitude: longitude),
+            timeZone: timeZone
+        )
     }
 
     private func distance(from lhs: Coordinate, to rhs: Coordinate) -> CLLocationDistance {
@@ -370,6 +448,26 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         return "\(max(minutes, 1))m"
     }
 
+    private func statusItemIcon(for status: DaylightStatus) -> NSImage? {
+        let iconSize: CGFloat = 18
+        let renderer = ImageRenderer(
+            content: SunStatusDynamicIcon(status: status, size: iconSize, variant: .orb)
+                .frame(width: iconSize, height: iconSize)
+        )
+        renderer.scale = statusItem.button?.window?.backingScaleFactor
+            ?? NSScreen.main?.backingScaleFactor
+            ?? 2
+
+        guard let cgImage = renderer.cgImage else {
+            return nil
+        }
+
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: iconSize, height: iconSize))
+        image.isTemplate = false
+        image.accessibilityDescription = "SunStatus"
+        return image
+    }
+
     private func accessibilityLabel(for status: DaylightStatus) -> String {
         guard let transition = status.nextTransition else {
             return "SunStatus, night"
@@ -378,4 +476,23 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         return "SunStatus, \(transition.kind.displayName) in \(menuTitle(for: status))"
     }
 
+}
+
+private struct ManualLocationPreference {
+    enum Keys {
+        static let isEnabled = "useManualLocation"
+        static let isSet = "manualLocationIsSet"
+        static let name = "manualLocationName"
+        static let latitude = "manualLocationLatitude"
+        static let longitude = "manualLocationLongitude"
+        static let timeZoneIdentifier = "manualLocationTimeZoneIdentifier"
+    }
+
+    let name: String
+    let coordinate: Coordinate
+    let timeZone: TimeZone
+}
+
+private extension Notification.Name {
+    static let sunStatusManualLocationSettingsDidChange = Notification.Name("SunStatusManualLocationSettingsDidChange")
 }
