@@ -10,6 +10,44 @@ private enum SunlightFieldSmoothing {
     static let smoothingRadius = 4
 }
 
+#if DEBUG
+private enum SunlightFieldPreviewCloudBarDesign {
+    static let radiusScale: CGFloat = 0.72
+    static let sampleCountMinimum = 80
+    static let sampleCountMaximum = 260
+    static let smoothingRadiusMultiplier = 1.0
+    static let smoothingRadiusMaximum = 36
+
+    static let featherVisibilityThreshold = 0.04
+    static let lineVisibilityThreshold = 0.06
+    static let occlusionIntensityThreshold = 0.18
+
+    static let featherLineWidth: CGFloat = 12
+    static let shadowLineWidth: CGFloat = 8.2
+    static let bodyBaseLineWidth: CGFloat = 4.6
+    static let bodyOcclusionLineWidthBoost: CGFloat = 2.2
+    static let lineCap: CGLineCap = .round
+    static let lineJoin: CGLineJoin = .round
+
+    static let highlightRadiusOffset: CGFloat = 0.04
+    static let highlightLineWidth: CGFloat = 1.1
+    static let highlightOpacityMultiplier = 0.10
+
+    static let featherWhite = 0.70
+    static let featherOpacityMultiplier = 0.16
+
+    static let shadowRed = 0.04
+    static let shadowGreen = 0.04
+    static let shadowBlue = 0.045
+    static let shadowOpacityMultiplier = 0.34
+
+    static let bodyClearWhite = 0.92
+    static let bodyCloudWhiteDrop = 0.64
+    static let bodyBaseOpacity = 0.18
+    static let bodyVisibilityOpacityMultiplier = 0.74
+}
+#endif
+
 struct SunlightFieldRenderer {
     struct Geometry {
         let size: CGSize
@@ -600,7 +638,6 @@ private struct SunlightFieldRendererPreviewCard: View {
     let status: DaylightStatus
 
     private let previewSize = CGSize(width: 244, height: 154)
-    private let cloudRadiusScale: CGFloat = 0.72
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -652,7 +689,7 @@ private struct SunlightFieldRendererPreviewCard: View {
             let geometry = SunlightFieldRendererPreviewGeometry(
                 size: size,
                 status: status,
-                cloudRadiusScale: cloudRadiusScale
+                cloudRadiusScale: SunlightFieldPreviewCloudBarDesign.radiusScale
             )
 
             context.stroke(
@@ -717,13 +754,13 @@ private struct SunlightFieldRendererPreviewCard: View {
             }
 
             var segment = Path()
-            segment.move(to: geometry.point(at: pair.0.progress, radiusScale: cloudRadiusScale))
-            segment.addLine(to: geometry.point(at: pair.1.progress, radiusScale: cloudRadiusScale))
+            segment.move(to: geometry.point(at: pair.0.progress, radiusScale: SunlightFieldPreviewCloudBarDesign.radiusScale))
+            segment.addLine(to: geometry.point(at: pair.1.progress, radiusScale: SunlightFieldPreviewCloudBarDesign.radiusScale))
 
             context.stroke(
                 segment,
                 with: .color(cloudFeatherColor(for: cloudCover)),
-                style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round)
+                style: cloudBarStroke(lineWidth: SunlightFieldPreviewCloudBarDesign.featherLineWidth)
             )
 
             let lineOpacity = cloudLineOpacity(for: cloudCover)
@@ -734,23 +771,35 @@ private struct SunlightFieldRendererPreviewCard: View {
             context.stroke(
                 segment,
                 with: .color(cloudShadowColor(for: cloudCover)),
-                style: StrokeStyle(lineWidth: 8.2, lineCap: .round, lineJoin: .round)
+                style: cloudBarStroke(lineWidth: SunlightFieldPreviewCloudBarDesign.shadowLineWidth)
             )
             context.stroke(
                 segment,
                 with: .color(cloudBodyColor(for: cloudCover)),
-                style: StrokeStyle(lineWidth: cloudBodyLineWidth(for: cloudCover), lineCap: .round, lineJoin: .round)
+                style: cloudBarStroke(lineWidth: cloudBodyLineWidth(for: cloudCover))
             )
 
+            let highlightRadiusScale = max(
+                SunlightFieldPreviewCloudBarDesign.radiusScale - SunlightFieldPreviewCloudBarDesign.highlightRadiusOffset,
+                0
+            )
             var highlight = Path()
-            highlight.move(to: geometry.point(at: pair.0.progress, radiusScale: cloudRadiusScale - 0.04))
-            highlight.addLine(to: geometry.point(at: pair.1.progress, radiusScale: cloudRadiusScale - 0.04))
+            highlight.move(to: geometry.point(at: pair.0.progress, radiusScale: highlightRadiusScale))
+            highlight.addLine(to: geometry.point(at: pair.1.progress, radiusScale: highlightRadiusScale))
             context.stroke(
                 highlight,
-                with: .color(.white.opacity(0.10 * lineOpacity)),
-                style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round)
+                with: .color(.white.opacity(SunlightFieldPreviewCloudBarDesign.highlightOpacityMultiplier * lineOpacity)),
+                style: cloudBarStroke(lineWidth: SunlightFieldPreviewCloudBarDesign.highlightLineWidth)
             )
         }
+    }
+
+    private func cloudBarStroke(lineWidth: CGFloat) -> StrokeStyle {
+        StrokeStyle(
+            lineWidth: lineWidth,
+            lineCap: SunlightFieldPreviewCloudBarDesign.lineCap,
+            lineJoin: SunlightFieldPreviewCloudBarDesign.lineJoin
+        )
     }
 
     private struct CloudBarSample {
@@ -761,7 +810,10 @@ private struct SunlightFieldRendererPreviewCard: View {
     private func cloudBarSamples() -> [CloudBarSample] {
         let points = status.arcPoints.sorted { $0.progress < $1.progress }
         let fallback = min(max(status.brightness.cloudCover ?? 0, 0), 1)
-        let sampleCount = min(max(SunlightFieldSmoothing.sampleCount, 80), 260)
+        let sampleCount = min(
+            max(SunlightFieldSmoothing.sampleCount, SunlightFieldPreviewCloudBarDesign.sampleCountMinimum),
+            SunlightFieldPreviewCloudBarDesign.sampleCountMaximum
+        )
         let cloudCurve = SmoothProgressCurve(
             points: points,
             fallback: fallback,
@@ -779,7 +831,8 @@ private struct SunlightFieldRendererPreviewCard: View {
     }
 
     private func smoothCloudBarSamples(_ samples: [CloudBarSample]) -> [CloudBarSample] {
-        let radius = min(max(SunlightFieldSmoothing.smoothingRadius, 0), 36)
+        let adjustedRadius = Int((Double(SunlightFieldSmoothing.smoothingRadius) * SunlightFieldPreviewCloudBarDesign.smoothingRadiusMultiplier).rounded())
+        let radius = min(max(adjustedRadius, 0), SunlightFieldPreviewCloudBarDesign.smoothingRadiusMaximum)
         guard radius > 0, samples.count > 2 else {
             return samples
         }
@@ -810,35 +863,44 @@ private struct SunlightFieldRendererPreviewCard: View {
     }
 
     private func cloudFeatherOpacity(for cloudCover: Double) -> Double {
-        smoothRamp(cloudCover, threshold: 0.04)
+        smoothRamp(cloudCover, threshold: SunlightFieldPreviewCloudBarDesign.featherVisibilityThreshold)
     }
 
     private func cloudLineOpacity(for cloudCover: Double) -> Double {
-        smoothRamp(cloudCover, threshold: 0.06)
+        smoothRamp(cloudCover, threshold: SunlightFieldPreviewCloudBarDesign.lineVisibilityThreshold)
     }
 
     private func cloudOcclusionIntensity(for cloudCover: Double) -> Double {
-        smoothRamp(cloudCover, threshold: 0.18)
+        smoothRamp(cloudCover, threshold: SunlightFieldPreviewCloudBarDesign.occlusionIntensityThreshold)
     }
 
     private func cloudFeatherColor(for cloudCover: Double) -> Color {
-        Color(white: 0.70).opacity(0.16 * cloudFeatherOpacity(for: cloudCover))
+        Color(white: SunlightFieldPreviewCloudBarDesign.featherWhite)
+            .opacity(SunlightFieldPreviewCloudBarDesign.featherOpacityMultiplier * cloudFeatherOpacity(for: cloudCover))
     }
 
     private func cloudShadowColor(for cloudCover: Double) -> Color {
-        Color(red: 0.04, green: 0.04, blue: 0.045).opacity(0.34 * cloudLineOpacity(for: cloudCover))
+        Color(
+            red: SunlightFieldPreviewCloudBarDesign.shadowRed,
+            green: SunlightFieldPreviewCloudBarDesign.shadowGreen,
+            blue: SunlightFieldPreviewCloudBarDesign.shadowBlue
+        )
+        .opacity(SunlightFieldPreviewCloudBarDesign.shadowOpacityMultiplier * cloudLineOpacity(for: cloudCover))
     }
 
     private func cloudBodyColor(for cloudCover: Double) -> Color {
         let clamped = min(max(cloudCover, 0), 1)
         let visibility = cloudLineOpacity(for: clamped)
-        let white = 0.92 - (clamped * 0.64)
-        let opacity = 0.18 + (visibility * 0.74)
+        let white = SunlightFieldPreviewCloudBarDesign.bodyClearWhite
+            - (clamped * SunlightFieldPreviewCloudBarDesign.bodyCloudWhiteDrop)
+        let opacity = SunlightFieldPreviewCloudBarDesign.bodyBaseOpacity
+            + (visibility * SunlightFieldPreviewCloudBarDesign.bodyVisibilityOpacityMultiplier)
         return Color(white: white).opacity(opacity)
     }
 
     private func cloudBodyLineWidth(for cloudCover: Double) -> CGFloat {
-        4.6 + CGFloat(cloudOcclusionIntensity(for: cloudCover)) * 2.2
+        SunlightFieldPreviewCloudBarDesign.bodyBaseLineWidth
+            + CGFloat(cloudOcclusionIntensity(for: cloudCover)) * SunlightFieldPreviewCloudBarDesign.bodyOcclusionLineWidthBoost
     }
 
     private func smoothRamp(_ value: Double, threshold: Double) -> Double {
@@ -860,7 +922,7 @@ private struct SunlightFieldRendererPreviewCard: View {
         let geometry = SunlightFieldRendererPreviewGeometry(
             size: previewSize,
             status: status,
-            cloudRadiusScale: cloudRadiusScale
+            cloudRadiusScale: SunlightFieldPreviewCloudBarDesign.radiusScale
         )
 
         return SunlightFieldRenderer.render(
