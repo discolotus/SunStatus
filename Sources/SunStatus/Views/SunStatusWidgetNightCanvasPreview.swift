@@ -45,11 +45,9 @@ private struct SunStatusWidgetNightCanvasPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             header(compact: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 90,
-                daylightLayout: .proportional
+                scale: .widgetSmall
             )
         }
         .padding(14)
@@ -71,11 +69,9 @@ private struct SunStatusWidgetNightCanvasPreview: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 108,
-                daylightLayout: .proportional
+                scale: .widgetMedium
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
@@ -87,11 +83,9 @@ private struct SunStatusWidgetNightCanvasPreview: View {
         VStack(alignment: .leading, spacing: 14) {
             header(compact: false, showsLocation: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: true,
-                arcHeight: 126,
-                daylightLayout: .proportional
+                scale: .widgetLarge
             )
 
             HStack(alignment: .top, spacing: 12) {
@@ -112,30 +106,11 @@ private struct SunStatusWidgetNightCanvasPreview: View {
     }
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            SunStatusDynamicIcon(
-                status: status,
-                size: compact ? 30 : 34,
-                variant: .orb
-            )
-            .frame(width: compact ? 30 : 34)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(status.brightness.classification.displayName)
-                    .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if showsLocation {
-                    Text(status.locationName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
+        SunStatusIdentityHeader(
+            status: status,
+            scale: compact ? .compact : .standard,
+            showsLocation: showsLocation
+        )
     }
 
     private func metric(title: String, value: String) -> some View {

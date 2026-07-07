@@ -223,6 +223,69 @@ public struct SunStatusDynamicIcon: View {
     }
 }
 
+public enum SunStatusIdentityHeaderScale: Sendable {
+    case compact
+    case standard
+
+    var iconSize: CGFloat {
+        switch self {
+        case .compact:
+            30
+        case .standard:
+            34
+        }
+    }
+
+    var titleSize: CGFloat {
+        switch self {
+        case .compact:
+            15
+        case .standard:
+            17
+        }
+    }
+}
+
+public struct SunStatusIdentityHeader: View {
+    private let status: DaylightStatus
+    private let scale: SunStatusIdentityHeaderScale
+    private let showsLocation: Bool
+
+    public init(
+        status: DaylightStatus,
+        scale: SunStatusIdentityHeaderScale = .standard,
+        showsLocation: Bool = false
+    ) {
+        self.status = status
+        self.scale = scale
+        self.showsLocation = showsLocation
+    }
+
+    public var body: some View {
+        HStack(spacing: 8) {
+            SunStatusDynamicIcon(status: status, size: scale.iconSize, variant: .orb)
+                .frame(width: scale.iconSize, height: scale.iconSize)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(status.brightness.classification.displayName)
+                    .font(.system(size: scale.titleSize, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                if showsLocation {
+                    Text(status.locationName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 private struct SunStatusIconPalette {
     let glow: Color
     let surface: Color

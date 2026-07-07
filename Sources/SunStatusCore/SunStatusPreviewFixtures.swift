@@ -10,6 +10,11 @@ public enum SunStatusPreviewFixtures {
         let coordinate = Coordinate(latitude: 37.7749, longitude: -122.4194)
         let date = fixtureDate(hour: hour, minute: minute, timezone: timezone)
         let events = SolarPositionCalculator.events(on: date, coordinate: coordinate, timezone: timezone)
+        let arcEvents = SolarPositionCalculator.events(
+            on: arcDate(for: date, events: events, timezone: timezone),
+            coordinate: coordinate,
+            timezone: timezone
+        )
         let position = SolarPositionCalculator.position(at: date, coordinate: coordinate)
         let daylightProgress = daylightProgress(at: date, sunrise: events.sunrise, sunset: events.sunset)
         let currentCloudCover = daylightProgress.map(cloudCover)
@@ -37,8 +42,18 @@ public enum SunStatusPreviewFixtures {
                 visibilityMeters: currentCloudCover.map { 24_000 - ($0 * 16_000) },
                 modifiers: modifiers(elevationDegrees: position.elevationDegrees, cloudCover: currentCloudCover)
             ),
-            arcPoints: arcPoints(events: events, coordinate: coordinate)
+            arcPoints: arcPoints(events: arcEvents, coordinate: coordinate)
         )
+    }
+
+    private static func arcDate(for date: Date, events: SolarDayEvents, timezone: TimeZone) -> Date {
+        guard let sunset = events.sunset, date > sunset else {
+            return date
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+        return calendar.date(byAdding: .day, value: 1, to: date) ?? date.addingTimeInterval(86_400)
     }
 
     private static func fixtureDate(hour: Int, minute: Int, timezone: TimeZone) -> Date {

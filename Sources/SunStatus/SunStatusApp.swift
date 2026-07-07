@@ -6,7 +6,16 @@ import SunStatusCore
 
 @main
 enum SunStatusMain {
+    @MainActor
     static func main() {
+        #if DEBUG
+        let didRenderWidgetDropdownEvidence = SunStatusWidgetDropdownEvidenceRenderer.renderIfRequested()
+        let didRenderPopoverEvidence = SunStatusPopoverEvidenceRenderer.renderIfRequested()
+        if didRenderWidgetDropdownEvidence || didRenderPopoverEvidence {
+            return
+        }
+        #endif
+
         guard !AppDelegate.shouldActivateExistingInstanceAndExit else {
             return
         }
