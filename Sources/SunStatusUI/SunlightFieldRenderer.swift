@@ -1,10 +1,13 @@
 import CoreGraphics
 import Foundation
 import SunStatusCore
+#if DEBUG
+import SwiftUI
+#endif
 
 private enum SunlightFieldSmoothing {
-    static let sampleCount = 192
-    static let smoothingRadius = 16
+    static let sampleCount = 500
+    static let smoothingRadius = 4
 }
 
 struct SunlightFieldRenderer {
@@ -234,25 +237,46 @@ struct SunlightFieldRenderer {
             return FieldSample(progress: progress, brightness: 0.5, cloudCover: 0)
         }
 
-        if progress <= first.progress {
+        let clampedProgress = min(max(progress, 0), 1)
+        guard let last = samples.last, samples.count > 1 else {
+            return FieldSample(progress: clampedProgress, brightness: first.brightness, cloudCover: first.cloudCover)
+        }
+
+        if clampedProgress <= first.progress {
             return first
         }
 
-        for pair in zip(samples, samples.dropFirst()) where progress <= pair.1.progress {
-            let span = pair.1.progress - pair.0.progress
-            guard span > 0 else {
-                return pair.1
-            }
-
-            let ratio = (progress - pair.0.progress) / span
-            return FieldSample(
-                progress: progress,
-                brightness: pair.0.brightness + ((pair.1.brightness - pair.0.brightness) * ratio),
-                cloudCover: pair.0.cloudCover + ((pair.1.cloudCover - pair.0.cloudCover) * ratio)
-            )
+        if clampedProgress >= last.progress {
+            return last
         }
 
-        return samples.last ?? first
+        var lowerIndex = samples.startIndex
+        var upperIndex = samples.index(before: samples.endIndex)
+
+        while samples.index(after: lowerIndex) < upperIndex {
+            let distance = samples.distance(from: lowerIndex, to: upperIndex)
+            let middleIndex = samples.index(lowerIndex, offsetBy: distance / 2)
+
+            if samples[middleIndex].progress < clampedProgress {
+                lowerIndex = middleIndex
+            } else {
+                upperIndex = middleIndex
+            }
+        }
+
+        let lower = samples[lowerIndex]
+        let upper = samples[upperIndex]
+        let span = upper.progress - lower.progress
+        guard span > 0 else {
+            return upper
+        }
+
+        let ratio = min(max((clampedProgress - lower.progress) / span, 0), 1)
+        return FieldSample(
+            progress: clampedProgress,
+            brightness: lower.brightness + ((upper.brightness - lower.brightness) * ratio),
+            cloudCover: lower.cloudCover + ((upper.cloudCover - lower.cloudCover) * ratio)
+        )
     }
 
     private static func progress(for rawAngle: Double, startAngle: Double, endAngle: Double) -> Double? {
@@ -531,3 +555,273 @@ struct SmoothProgressCurve {
         min(max(value, 0), 1)
     }
 }
+
+#if DEBUG
+private struct SunlightFieldRendererPreviewBoard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sunlight Field Renderer")
+                    .font(.title2.weight(.semibold))
+
+                Spacer()
+
+                Text("samples \(SunlightFieldSmoothing.sampleCount)  smoothing \(SunlightFieldSmoothing.smoothingRadius)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 14) {
+                SunlightFieldRendererPreviewCard(
+                    title: "Clear morning",
+                    status: SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus(hour: 8, minute: 30)
+                )
+
+                SunlightFieldRendererPreviewCard(
+                    title: "Cloudy afternoon",
+                    status: SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus(hour: 14, minute: 30)
+                )
+
+                SunlightFieldRendererPreviewCard(
+                    title: "Night next day",
+                    status: SunStatusPreviewFixtures.brightMorningCloudyAfternoonStatus(hour: 22, minute: 15)
+                )
+            }
+        }
+        .padding(24)
+        .background(Color.primary.opacity(0.035))
+    }
+}
+
+private struct SunlightFieldRendererPreviewCard: View {
+    @Environment(\.displayScale) private var displayScale
+
+    let title: String
+    let status: DaylightStatus
+
+    private let previewSize = CGSize(width: 244, height: 154)
+    private let cloudRadiusScale: CGFloat = 0.72
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+
+            ZStack {
+                fieldImage
+                referenceOverlay
+            }
+            .frame(width: previewSize.width, height: previewSize.height)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.primary.opacity(0.035))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            HStack(spacing: 12) {
+                Text("light \(percent(status.brightness.score))")
+                Text("clouds \(percent(status.brightness.cloudCover))")
+                Spacer(minLength: 0)
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 272, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var fieldImage: some View {
+        if let rendered = renderedImage {
+            Image(decorative: rendered.cgImage, scale: rendered.scale, orientation: .up)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: previewSize.width, height: previewSize.height)
+        } else {
+            Color.red.opacity(0.16)
+        }
+    }
+
+    private var referenceOverlay: some View {
+        Canvas { context, size in
+            let geometry = SunlightFieldRendererPreviewGeometry(
+                size: size,
+                status: status,
+                cloudRadiusScale: cloudRadiusScale
+            )
+
+            context.stroke(
+                geometry.fanPath,
+                with: .color(.orange.opacity(0.16)),
+                lineWidth: 1
+            )
+
+            var sunriseLine = Path()
+            sunriseLine.move(to: geometry.center)
+            sunriseLine.addLine(to: geometry.point(at: 0))
+            context.stroke(sunriseLine, with: .color(.orange.opacity(0.48)), lineWidth: 1)
+
+            var sunsetLine = Path()
+            sunsetLine.move(to: geometry.center)
+            sunsetLine.addLine(to: geometry.point(at: 1))
+            context.stroke(sunsetLine, with: .color(.orange.opacity(0.48)), lineWidth: 1)
+
+            var cloudReference = Path()
+            cloudReference.addLines(geometry.points(from: 0, through: 1, radiusScale: cloudRadiusScale, steps: 96))
+            context.stroke(
+                cloudReference,
+                with: .color(.primary.opacity(0.22)),
+                style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round, dash: [4, 5])
+            )
+
+            var arcReference = Path()
+            arcReference.addLines(geometry.points(from: 0, through: 1, steps: 96))
+            context.stroke(
+                arcReference,
+                with: .linearGradient(
+                    Gradient(colors: [.orange.opacity(0.80), .yellow.opacity(0.86)]),
+                    startPoint: geometry.point(at: 0),
+                    endPoint: geometry.point(at: 1)
+                ),
+                style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
+            )
+
+            if let progress = status.solar.daylightProgress {
+                let sunPoint = geometry.point(at: progress)
+                context.fill(
+                    Path(ellipseIn: CGRect(x: sunPoint.x - 5, y: sunPoint.y - 5, width: 10, height: 10)),
+                    with: .color(.yellow)
+                )
+                context.stroke(
+                    Path(ellipseIn: CGRect(x: sunPoint.x - 5, y: sunPoint.y - 5, width: 10, height: 10)),
+                    with: .color(.orange),
+                    lineWidth: 1.5
+                )
+            }
+        }
+    }
+
+    private var renderedImage: SunlightFieldRenderer.RenderedImage? {
+        let geometry = SunlightFieldRendererPreviewGeometry(
+            size: previewSize,
+            status: status,
+            cloudRadiusScale: cloudRadiusScale
+        )
+
+        return SunlightFieldRenderer.render(
+            geometry: geometry.rendererGeometry,
+            arcPoints: status.arcPoints,
+            fallbackBrightness: status.brightness.score,
+            fallbackCloudCover: status.brightness.cloudCover,
+            displayScale: min(displayScale, 1)
+        )
+    }
+
+    private func percent(_ value: Double?) -> String {
+        guard let value else {
+            return "-"
+        }
+
+        return "\(Int((value * 100).rounded()))%"
+    }
+}
+
+private struct SunlightFieldRendererPreviewGeometry {
+    let size: CGSize
+    let dayFraction: Double
+    let cloudRadiusScale: CGFloat
+
+    init(size: CGSize, status: DaylightStatus, cloudRadiusScale: CGFloat) {
+        self.size = size
+        self.dayFraction = Self.daylightFraction(status: status)
+        self.cloudRadiusScale = cloudRadiusScale
+    }
+
+    var center: CGPoint {
+        CGPoint(x: size.width / 2, y: size.height * 0.58)
+    }
+
+    var radius: CGFloat {
+        min(size.width * 0.44, size.height * 0.43)
+    }
+
+    var dayAngle: CGFloat {
+        CGFloat(min(max(dayFraction, 0.02), 0.98) * 2 * .pi)
+    }
+
+    var sunriseAngle: CGFloat {
+        CGFloat(-Double.pi / 2) - (dayAngle / 2)
+    }
+
+    var sunsetAngle: CGFloat {
+        sunriseAngle + dayAngle
+    }
+
+    var rendererGeometry: SunlightFieldRenderer.Geometry {
+        SunlightFieldRenderer.Geometry(
+            size: size,
+            center: center,
+            radius: radius,
+            startAngle: sunriseAngle,
+            endAngle: sunsetAngle,
+            cloudRadiusScale: cloudRadiusScale,
+            cutsGroundBelowBoundaryLines: true
+        )
+    }
+
+    var fanPath: Path {
+        var path = Path()
+        path.move(to: center)
+        path.addLine(to: point(at: 0))
+        path.addLines(points(from: 0, through: 1, steps: 96))
+        path.closeSubpath()
+        return path
+    }
+
+    func point(at progress: Double, radiusScale: CGFloat = 1) -> CGPoint {
+        let angle = sunriseAngle + (CGFloat(min(max(progress, 0), 1)) * dayAngle)
+        let scaledRadius = radius * min(max(radiusScale, 0), 1)
+        return CGPoint(
+            x: center.x + cos(angle) * scaledRadius,
+            y: center.y + sin(angle) * scaledRadius
+        )
+    }
+
+    func points(
+        from start: Double,
+        through end: Double,
+        radiusScale: CGFloat = 1,
+        steps: Int
+    ) -> [CGPoint] {
+        let clampedStart = min(max(start, 0), 1)
+        let clampedEnd = min(max(end, 0), 1)
+        let totalSteps = max(steps, 1)
+
+        return (0...totalSteps).map { index in
+            let progress = clampedStart + ((clampedEnd - clampedStart) * Double(index) / Double(totalSteps))
+            return point(at: progress, radiusScale: radiusScale)
+        }
+    }
+
+    private static func daylightFraction(status: DaylightStatus) -> Double {
+        let sortedPoints = status.arcPoints.sorted { $0.progress < $1.progress }
+        let sunrise = sortedPoints.first?.date ?? status.solar.sunrise
+        let sunset = sortedPoints.last?.date ?? status.solar.sunset
+
+        guard let sunrise, let sunset, sunset > sunrise else {
+            return 0.5
+        }
+
+        return min(max(sunset.timeIntervalSince(sunrise) / 86_400, 0.02), 0.98)
+    }
+}
+
+#Preview("Sunlight Field Renderer Tuning", traits: .sizeThatFitsLayout) {
+    SunlightFieldRendererPreviewBoard()
+}
+#endif
