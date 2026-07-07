@@ -822,6 +822,42 @@ public struct SolarArcView: View {
         return path
     }
 
+    private func roundedAnnularBandPath(
+        center: CGPoint,
+        radius: CGFloat,
+        lineWidth: CGFloat,
+        startAngle: CGFloat,
+        endAngle: CGFloat
+    ) -> Path {
+        let halfWidth = lineWidth / 2
+        let innerRadius = max(radius - halfWidth, 0)
+        let outerRadius = radius + halfWidth
+        let capRadius = min(halfWidth, radius)
+        let startPoint = point(center: center, radius: radius, angle: startAngle)
+        let endPoint = point(center: center, radius: radius, angle: endAngle)
+
+        var path = annularWedgePath(
+            center: center,
+            innerRadius: innerRadius,
+            outerRadius: outerRadius,
+            startAngle: startAngle,
+            endAngle: endAngle
+        )
+        path.addEllipse(in: CGRect(
+            x: startPoint.x - capRadius,
+            y: startPoint.y - capRadius,
+            width: capRadius * 2,
+            height: capRadius * 2
+        ))
+        path.addEllipse(in: CGRect(
+            x: endPoint.x - capRadius,
+            y: endPoint.y - capRadius,
+            width: capRadius * 2,
+            height: capRadius * 2
+        ))
+        return path
+    }
+
     private func proportionalGroundCutoutPath(geometry: ProportionalDaylightArcGeometry) -> Path {
         let left = geometry.point(at: 0)
         let center = geometry.center
@@ -1145,13 +1181,12 @@ public struct SolarArcView: View {
         color: Color
     ) {
         let radius = geometry.radius * radiusScale
-        let halfWidth = lineWidth / 2
         for range in cloudArcRanges(from: samples, threshold: threshold) {
             context.fill(
-                annularWedgePath(
+                roundedAnnularBandPath(
                     center: geometry.center,
-                    innerRadius: max(radius - halfWidth, 0),
-                    outerRadius: radius + halfWidth,
+                    radius: radius,
+                    lineWidth: lineWidth,
                     startAngle: geometry.angle(at: range.start),
                     endAngle: geometry.angle(at: range.end)
                 ),
