@@ -18,14 +18,14 @@ private enum SunlightFieldPreviewCloudBarDesign {
     static let smoothingRadiusMultiplier = 1.0
     static let smoothingRadiusMaximum = 36
 
-    static let featherVisibilityThreshold = 0.04
-    static let lineVisibilityThreshold = 0.06
+    static let featherVisibilityThreshold = 0.08
+    static let lineVisibilityThreshold = 0.10
     static let occlusionIntensityThreshold = 0.18
 
-    static let featherLineWidth: CGFloat = 12
-    static let shadowLineWidth: CGFloat = 8.2
-    static let bodyBaseLineWidth: CGFloat = 4.6
-    static let bodyOcclusionLineWidthBoost: CGFloat = 2.2
+    static let featherLineWidth: CGFloat = 8.5
+    static let shadowLineWidth: CGFloat = 6.0
+    static let bodyBaseLineWidth: CGFloat = 3.6
+    static let bodyOcclusionLineWidthBoost: CGFloat = 1.3
     static let lineCap: CGLineCap = .round
     static let lineJoin: CGLineJoin = .round
 
@@ -34,7 +34,7 @@ private enum SunlightFieldPreviewCloudBarDesign {
     static let highlightOpacityMultiplier = 0.10
 
     static let featherWhite = 0.70
-    static let featherOpacityMultiplier = 0.16
+    static let featherOpacityMultiplier = 0.09
 
     static let shadowRed = 0.04
     static let shadowGreen = 0.04
