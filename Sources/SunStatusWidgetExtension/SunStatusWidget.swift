@@ -220,11 +220,9 @@ struct SunStatusWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             header(compact: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: entry.status,
-                showsTimeLabels: false,
-                arcHeight: 90,
-                daylightLayout: .proportional
+                scale: .widgetSmall
             )
         }
     }
@@ -244,11 +242,9 @@ struct SunStatusWidgetView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: entry.status,
-                showsTimeLabels: false,
-                arcHeight: 108,
-                daylightLayout: .proportional
+                scale: .widgetMedium
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
@@ -258,11 +254,9 @@ struct SunStatusWidgetView: View {
         VStack(alignment: .leading, spacing: 14) {
             header(compact: false, showsLocation: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: entry.status,
-                showsTimeLabels: true,
-                arcHeight: 126,
-                daylightLayout: .proportional
+                scale: .widgetLarge
             )
 
             HStack(alignment: .top, spacing: 12) {
@@ -282,28 +276,11 @@ struct SunStatusWidgetView: View {
     }
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbolName)
-                .font(.system(size: compact ? 16 : 18, weight: .semibold))
-                .foregroundStyle(.orange)
-                .frame(width: compact ? 18 : 20)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(entry.status.brightness.classification.displayName)
-                    .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if showsLocation {
-                    Text(entry.status.locationName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
+        SunStatusIdentityHeader(
+            status: entry.status,
+            scale: compact ? .compact : .standard,
+            showsLocation: showsLocation
+        )
     }
 
     private var backgroundColors: [Color] {
@@ -318,19 +295,6 @@ struct SunStatusWidgetView: View {
             [Color.yellow.opacity(0.20), Color.blue.opacity(0.10)]
         case .vivid:
             [Color.yellow.opacity(0.24), Color.orange.opacity(0.12)]
-        }
-    }
-
-    private var symbolName: String {
-        switch entry.status.brightness.classification {
-        case .dark:
-            "moon.stars.fill"
-        case .dim:
-            "sun.horizon.fill"
-        case .muted:
-            "cloud.sun.fill"
-        case .bright, .vivid:
-            "sun.max.fill"
         }
     }
 

@@ -1,4 +1,7 @@
+import AppKit
+import ImageIO
 import SwiftUI
+import UniformTypeIdentifiers
 #if canImport(SunStatusCore)
 import SunStatusCore
 #endif
@@ -16,6 +19,7 @@ private enum WidgetCanvasFamily {
 private struct SunStatusWidgetCanvasPreview: View {
     let status: DaylightStatus
     let family: WidgetCanvasFamily
+    var includesEvidenceBackdrop = true
 
     var body: some View {
         Group {
@@ -37,19 +41,17 @@ private struct SunStatusWidgetCanvasPreview: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
-        .padding(24)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(includesEvidenceBackdrop ? 24 : 0)
+        .background(includesEvidenceBackdrop ? Color(nsColor: .windowBackgroundColor) : Color.clear)
     }
 
     private var smallContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             header(compact: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 90,
-                daylightLayout: .proportional
+                scale: .widgetSmall
             )
         }
         .padding(14)
@@ -71,11 +73,9 @@ private struct SunStatusWidgetCanvasPreview: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: false,
-                arcHeight: 108,
-                daylightLayout: .proportional
+                scale: .widgetMedium
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
@@ -87,11 +87,9 @@ private struct SunStatusWidgetCanvasPreview: View {
         VStack(alignment: .leading, spacing: 14) {
             header(compact: false, showsLocation: true)
 
-            SolarArcView(
+            SunStatusDynamicArcView(
                 status: status,
-                showsTimeLabels: true,
-                arcHeight: 126,
-                daylightLayout: .proportional
+                scale: .widgetLarge
             )
 
             HStack(alignment: .top, spacing: 12) {
@@ -112,28 +110,11 @@ private struct SunStatusWidgetCanvasPreview: View {
     }
 
     private func header(compact: Bool, showsLocation: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbolName)
-                .font(.system(size: compact ? 16 : 18, weight: .semibold))
-                .foregroundStyle(.orange)
-                .frame(width: compact ? 18 : 20)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(status.brightness.classification.displayName)
-                    .font(.system(size: compact ? 15 : 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if showsLocation {
-                    Text(status.locationName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
+        SunStatusIdentityHeader(
+            status: status,
+            scale: compact ? .compact : .standard,
+            showsLocation: showsLocation
+        )
     }
 
     private func metric(title: String, value: String) -> some View {
@@ -181,19 +162,6 @@ private struct SunStatusWidgetCanvasPreview: View {
             [Color.yellow.opacity(0.20), Color.blue.opacity(0.10)]
         case .vivid:
             [Color.yellow.opacity(0.24), Color.orange.opacity(0.12)]
-        }
-    }
-
-    private var symbolName: String {
-        switch status.brightness.classification {
-        case .dark:
-            "moon.stars.fill"
-        case .dim:
-            "sun.horizon.fill"
-        case .muted:
-            "cloud.sun.fill"
-        case .bright, .vivid:
-            "sun.max.fill"
         }
     }
 
@@ -247,6 +215,191 @@ private struct SunStatusWidgetCanvasPreview: View {
         }
 
         return "\(max(minutes, 1))m"
+    }
+}
+
+private struct SunStatusWidgetDropdownEvidence: View {
+    private let status = SunStatusWidgetCanvasPreviewData.cloudShiftStatus
+    private let panelBackground = Color(red: 0.95, green: 0.97, blue: 0.98)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 26) {
+            Text("Widget dropdown with dynamic icons")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+
+            HStack(alignment: .top, spacing: 30) {
+                dropdownPanel
+                    .frame(width: 292)
+
+                SunStatusWidgetCanvasPreview(
+                    status: status,
+                    family: .medium,
+                    includesEvidenceBackdrop: false
+                )
+            }
+        }
+        .padding(46)
+        .frame(width: 1_120, height: 640, alignment: .topLeading)
+        .background(Color.white)
+        .foregroundStyle(Color(red: 0.14, green: 0.15, blue: 0.17))
+    }
+
+    private var dropdownPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Dynamic icon")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                SunStatusDynamicIcon(status: status, size: 30, variant: .orb)
+                    .frame(width: 44, height: 44)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Orb")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+
+                    Text("Selected for widgets")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.white, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(SunStatusDynamicIconVariant.allCases) { variant in
+                    dropdownRow(variant: variant)
+
+                    if variant != SunStatusDynamicIconVariant.allCases.last {
+                        Divider()
+                            .padding(.leading, 54)
+                    }
+                }
+            }
+            .background(.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+        }
+        .padding(18)
+        .background(panelBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func dropdownRow(variant: SunStatusDynamicIconVariant) -> some View {
+        HStack(spacing: 10) {
+            SunStatusDynamicIcon(status: status, size: 26, variant: variant)
+                .frame(width: 40, height: 40)
+
+            Text(variant.displayName)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+
+            Spacer(minLength: 0)
+
+            if variant == .orb {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.blue)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background {
+            if variant == .orb {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.blue.opacity(0.08))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 4)
+            }
+        }
+    }
+}
+
+enum SunStatusWidgetDropdownEvidenceRenderer {
+    @MainActor
+    static func renderIfRequested() -> Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--render-widget-dropdown-pr-evidence")
+            || arguments.contains("--render-popover-pr-evidence")
+        else {
+            return false
+        }
+
+        do {
+            let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            let outputDirectory = root.appendingPathComponent("screenshots/pr-evidence")
+            try FileManager.default.createDirectory(
+                at: outputDirectory,
+                withIntermediateDirectories: true
+            )
+
+            let outputURL = outputDirectory.appendingPathComponent("dynamic-icon-widget-context.png")
+            try render(outputURL: outputURL)
+            print("Wrote \(outputURL.path)")
+            return true
+        } catch {
+            fputs("Failed to render widget dropdown PR evidence: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+
+    @MainActor
+    private static func render(outputURL: URL) throws {
+        let content = SunStatusWidgetDropdownEvidence()
+            .environment(\.colorScheme, .light)
+
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 1_120, height: 640)
+        hostingView.wantsLayer = true
+        hostingView.layoutSubtreeIfNeeded()
+
+        guard let representation = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) else {
+            throw RenderError.missingImage
+        }
+        representation.size = hostingView.bounds.size
+        hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+
+        let image = NSImage(size: hostingView.bounds.size)
+        image.addRepresentation(representation)
+
+        guard let tiffData = image.tiffRepresentation,
+              let source = CGImageSourceCreateWithData(tiffData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        else {
+            throw RenderError.missingImage
+        }
+
+        try writePNG(cgImage, to: outputURL)
+    }
+
+    private static func writePNG(_ image: CGImage, to url: URL) throws {
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+            throw RenderError.missingDestination
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw RenderError.writeFailed
+        }
+    }
+
+    private enum RenderError: Error {
+        case missingImage
+        case missingDestination
+        case writeFailed
     }
 }
 

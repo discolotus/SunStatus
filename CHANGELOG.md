@@ -10,6 +10,7 @@ All notable changes to SunStatus will be documented in this file.
 - Added manual location resolution for city, address, and coordinate input, with saved latitude, longitude, name, and timezone used across the menu bar, popover, windows, widgets, and weather.
 - Added app-target widget canvas previews for daytime, nighttime, and a simulated bright-morning/cloudy-afternoon scenario.
 - Added reusable preview fixtures and timeline helpers for cloud-shift, night-mode, and widget review states.
+- Added a reusable dynamic SunStatus widget icon with Orb, Horizon, and Prism prototype variants for Xcode preview review.
 - Added Xcode-visible test coverage for preview fixtures, preview timelines, mock daylight behavior, and solar daylight behavior.
 - Added Codex worktree setup notes and local environment actions for common build, test, and run workflows.
 
@@ -19,6 +20,9 @@ All notable changes to SunStatus will be documented in this file.
 - Changed daytime widget arcs to use a proportional daylight span with sunrise and sunset guide lines, coloring only the in-day arc rather than the cropped night side.
 - Refined the solar arc cloud visualization with stronger cloud-blocked background contrast, smoother cloud transitions, and hidden cloud arcs when no meaningful cloud cover is present.
 - Refined proportional daytime widget cloud shading so heavy cloud cover darkens the center-reaching area below the cloud layer instead of only the arc ring.
+- Replaced the widget header's flat SF Symbol with a smoother glass-styled dynamic icon that reflects day, night, daylight progress, and cloud cover.
+- Restyled the proportional daytime widget arc with smoother glass-like sunlight, cloud-shadow, rim, sunrise/sunset, and sun treatments driven by brightness and forecast cloud-cover samples.
+- Tightened proportional daytime arc clipping so sunlight stops at the sunrise and sunset guide lines, cleared the lower ground wedge, and replaced segmented cloud strokes with continuous cloud bands to avoid rasterized shading artifacts.
 - Increased the small widget's night disk size by removing the bottom text rows and giving the arc more vertical room.
 - Expanded night-mode arc rendering and preview-time behavior so the slider can represent the full overnight timeline into the next sunrise.
 - Updated the app, widget extension, Xcode project, and scheme wiring so WidgetKit previews and tests are available from Xcode.
