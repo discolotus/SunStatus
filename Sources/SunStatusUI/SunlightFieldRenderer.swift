@@ -671,14 +671,6 @@ private struct SunlightFieldRendererPreviewCard: View {
             sunsetLine.addLine(to: geometry.point(at: 1))
             context.stroke(sunsetLine, with: .color(.orange.opacity(0.48)), lineWidth: 1)
 
-            var cloudReference = Path()
-            cloudReference.addLines(geometry.points(from: 0, through: 1, radiusScale: cloudRadiusScale, steps: 96))
-            context.stroke(
-                cloudReference,
-                with: .color(.primary.opacity(0.22)),
-                style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round, dash: [4, 5])
-            )
-
             var arcReference = Path()
             arcReference.addLines(geometry.points(from: 0, through: 1, steps: 96))
             context.stroke(
@@ -690,6 +682,8 @@ private struct SunlightFieldRendererPreviewCard: View {
                 ),
                 style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
             )
+
+            drawCloudCoverBar(in: context, geometry: geometry)
 
             if let progress = status.solar.daylightProgress {
                 let sunPoint = geometry.point(at: progress)
@@ -704,6 +698,162 @@ private struct SunlightFieldRendererPreviewCard: View {
                 )
             }
         }
+    }
+
+    private func drawCloudCoverBar(
+        in context: GraphicsContext,
+        geometry: SunlightFieldRendererPreviewGeometry
+    ) {
+        let samples = cloudBarSamples()
+        guard samples.contains(where: { cloudFeatherOpacity(for: $0.cloudCover) > 0 }) else {
+            return
+        }
+
+        for pair in zip(samples, samples.dropFirst()) {
+            let cloudCover = (pair.0.cloudCover + pair.1.cloudCover) / 2
+            let featherOpacity = cloudFeatherOpacity(for: cloudCover)
+            guard featherOpacity > 0 else {
+                continue
+            }
+
+            var segment = Path()
+            segment.move(to: geometry.point(at: pair.0.progress, radiusScale: cloudRadiusScale))
+            segment.addLine(to: geometry.point(at: pair.1.progress, radiusScale: cloudRadiusScale))
+
+            context.stroke(
+                segment,
+                with: .color(cloudFeatherColor(for: cloudCover)),
+                style: StrokeStyle(lineWidth: 12, lineCap: .round, lineJoin: .round)
+            )
+
+            let lineOpacity = cloudLineOpacity(for: cloudCover)
+            guard lineOpacity > 0 else {
+                continue
+            }
+
+            context.stroke(
+                segment,
+                with: .color(cloudShadowColor(for: cloudCover)),
+                style: StrokeStyle(lineWidth: 8.2, lineCap: .round, lineJoin: .round)
+            )
+            context.stroke(
+                segment,
+                with: .color(cloudBodyColor(for: cloudCover)),
+                style: StrokeStyle(lineWidth: cloudBodyLineWidth(for: cloudCover), lineCap: .round, lineJoin: .round)
+            )
+
+            var highlight = Path()
+            highlight.move(to: geometry.point(at: pair.0.progress, radiusScale: cloudRadiusScale - 0.04))
+            highlight.addLine(to: geometry.point(at: pair.1.progress, radiusScale: cloudRadiusScale - 0.04))
+            context.stroke(
+                highlight,
+                with: .color(.white.opacity(0.10 * lineOpacity)),
+                style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round)
+            )
+        }
+    }
+
+    private struct CloudBarSample {
+        let progress: Double
+        let cloudCover: Double
+    }
+
+    private func cloudBarSamples() -> [CloudBarSample] {
+        let points = status.arcPoints.sorted { $0.progress < $1.progress }
+        let fallback = min(max(status.brightness.cloudCover ?? 0, 0), 1)
+        let sampleCount = min(max(SunlightFieldSmoothing.sampleCount, 80), 260)
+        let cloudCurve = SmoothProgressCurve(
+            points: points,
+            fallback: fallback,
+            value: \.cloudCover
+        )
+        let rawSamples = (0...sampleCount).map { index in
+            let progress = Double(index) / Double(sampleCount)
+            return CloudBarSample(
+                progress: progress,
+                cloudCover: cloudCurve.value(at: progress)
+            )
+        }
+
+        return smoothCloudBarSamples(rawSamples)
+    }
+
+    private func smoothCloudBarSamples(_ samples: [CloudBarSample]) -> [CloudBarSample] {
+        let radius = min(max(SunlightFieldSmoothing.smoothingRadius, 0), 36)
+        guard radius > 0, samples.count > 2 else {
+            return samples
+        }
+
+        return samples.indices.map { index in
+            let lowerBound = max(samples.startIndex, index - radius)
+            let upperBound = min(samples.index(before: samples.endIndex), index + radius)
+            var weightedCloudCover = 0.0
+            var totalWeight = 0.0
+
+            for neighborIndex in lowerBound...upperBound {
+                let distance = abs(neighborIndex - index)
+                let normalizedDistance = Double(distance) / Double(radius + 1)
+                let weight = 1 - (normalizedDistance * normalizedDistance)
+                weightedCloudCover += samples[neighborIndex].cloudCover * weight
+                totalWeight += weight
+            }
+
+            guard totalWeight > 0 else {
+                return samples[index]
+            }
+
+            return CloudBarSample(
+                progress: samples[index].progress,
+                cloudCover: weightedCloudCover / totalWeight
+            )
+        }
+    }
+
+    private func cloudFeatherOpacity(for cloudCover: Double) -> Double {
+        smoothRamp(cloudCover, threshold: 0.04)
+    }
+
+    private func cloudLineOpacity(for cloudCover: Double) -> Double {
+        smoothRamp(cloudCover, threshold: 0.06)
+    }
+
+    private func cloudOcclusionIntensity(for cloudCover: Double) -> Double {
+        smoothRamp(cloudCover, threshold: 0.18)
+    }
+
+    private func cloudFeatherColor(for cloudCover: Double) -> Color {
+        Color(white: 0.70).opacity(0.16 * cloudFeatherOpacity(for: cloudCover))
+    }
+
+    private func cloudShadowColor(for cloudCover: Double) -> Color {
+        Color(red: 0.04, green: 0.04, blue: 0.045).opacity(0.34 * cloudLineOpacity(for: cloudCover))
+    }
+
+    private func cloudBodyColor(for cloudCover: Double) -> Color {
+        let clamped = min(max(cloudCover, 0), 1)
+        let visibility = cloudLineOpacity(for: clamped)
+        let white = 0.92 - (clamped * 0.64)
+        let opacity = 0.18 + (visibility * 0.74)
+        return Color(white: white).opacity(opacity)
+    }
+
+    private func cloudBodyLineWidth(for cloudCover: Double) -> CGFloat {
+        4.6 + CGFloat(cloudOcclusionIntensity(for: cloudCover)) * 2.2
+    }
+
+    private func smoothRamp(_ value: Double, threshold: Double) -> Double {
+        let clamped = min(max(value, 0), 1)
+        let clampedThreshold = min(max(threshold, 0), 0.98)
+        guard clamped > clampedThreshold else {
+            return 0
+        }
+
+        return smootherStep((clamped - clampedThreshold) / (1 - clampedThreshold))
+    }
+
+    private func smootherStep(_ value: Double) -> Double {
+        let clamped = min(max(value, 0), 1)
+        return clamped * clamped * clamped * (clamped * (clamped * 6 - 15) + 10)
     }
 
     private var renderedImage: SunlightFieldRenderer.RenderedImage? {
