@@ -4,8 +4,14 @@ All notable changes to SunStatus will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-07
+
 ### Added
 
+- Added a macOS WidgetKit desktop widget that renders the SunStatus arc with daylight progress, brightness, next transition, and solar elevation.
+- Added a separate large `SunStatus Detail` WidgetKit configuration with a larger arc layout and daylight metrics.
+- Added a native Xcode project with a real `SunStatusWidgetExtension` app-extension target for WidgetKit development and packaging.
+- Added app-target Xcode canvas previews for the small, medium, and large widget layouts plus a `scripts/verify-widgets.sh` check for the standard WidgetKit development loop.
 - Added Settings controls for showing the app icon in the Dock while running and for using a manually entered location instead of automatic macOS location lookup.
 - Added manual location resolution for city, address, and coordinate input, with saved latitude, longitude, name, and timezone used across the menu bar, popover, windows, widgets, and weather.
 - Added app-target widget canvas previews for daytime, nighttime, and a simulated bright-morning/cloudy-afternoon scenario.
@@ -16,6 +22,8 @@ All notable changes to SunStatus will be documented in this file.
 
 ### Changed
 
+- Changed local and release bundle builds to use the Xcode `SunStatus` scheme so the widget extension is produced by Xcode instead of a hand-assembled SwiftPM executable bundle.
+- Bumped the default app, widget extension, and release version to `0.4.1` so macOS refreshes the WidgetKit descriptor after adding the third widget configuration.
 - Changed the medium widget layout so status metrics sit on the left and the solar arc uses the right side of the widget.
 - Changed daytime widget arcs to use a proportional daylight span with sunrise and sunset guide lines, coloring only the in-day arc rather than the cropped night side.
 - Refined the solar arc cloud visualization with stronger cloud-blocked background contrast, smoother cloud transitions, and hidden cloud arcs when no meaningful cloud cover is present.
@@ -32,20 +40,7 @@ All notable changes to SunStatus will be documented in this file.
 - Fixed menu bar popover refresh behavior around manual/current-location weather overrides.
 - Fixed sunrise guide placement in the preview-time slider by aligning it with the displayed overnight timeline.
 - Fixed app activation behavior for showing or hiding the Dock icon while SunStatus is running.
-
-## [0.4.1] - 2026-06-12
-
-### Added
-
-- Added a macOS WidgetKit desktop widget that renders the SunStatus arc with daylight progress, brightness, next transition, and solar elevation.
-- Added a separate large `SunStatus Detail` WidgetKit configuration with a larger arc layout and daylight metrics.
-- Added a native Xcode project with a real `SunStatusWidgetExtension` app-extension target for WidgetKit development and packaging.
-- Added app-target Xcode canvas previews for the small, medium, and large widget layouts plus a `scripts/verify-widgets.sh` check for the standard WidgetKit development loop.
-
-### Changed
-
-- Changed local and release bundle builds to use the Xcode `SunStatus` scheme so the widget extension is produced by Xcode instead of a hand-assembled SwiftPM executable bundle.
-- Bumped the default app, widget extension, and release version to `0.4.1` so macOS refreshes the WidgetKit descriptor after adding the third widget configuration.
+- Fixed proportional cloud-band caps so popover preview cloud arcs avoid squared-off range edges.
 
 ### Notes
 
