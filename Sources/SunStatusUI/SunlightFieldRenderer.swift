@@ -26,7 +26,7 @@ private enum SunlightFieldPreviewCloudBarDesign {
     static let shadowLineWidth: CGFloat = 6.0
     static let bodyBaseLineWidth: CGFloat = 3.6
     static let bodyOcclusionLineWidthBoost: CGFloat = 1.3
-    static let lineCap: CGLineCap = .round
+    static let lineCap: CGLineCap = .butt
     static let lineJoin: CGLineJoin = .round
 
     static let highlightRadiusOffset: CGFloat = 0.04

@@ -1144,16 +1144,18 @@ public struct SolarArcView: View {
         lineWidth: CGFloat,
         color: Color
     ) {
+        let radius = geometry.radius * radiusScale
+        let halfWidth = lineWidth / 2
         for range in cloudArcRanges(from: samples, threshold: threshold) {
-            context.stroke(
-                arcPath(
+            context.fill(
+                annularWedgePath(
                     center: geometry.center,
-                    radius: geometry.radius * radiusScale,
+                    innerRadius: max(radius - halfWidth, 0),
+                    outerRadius: radius + halfWidth,
                     startAngle: geometry.angle(at: range.start),
                     endAngle: geometry.angle(at: range.end)
                 ),
-                with: .color(color),
-                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+                with: .color(color)
             )
         }
     }
