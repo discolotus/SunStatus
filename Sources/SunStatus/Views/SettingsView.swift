@@ -17,6 +17,7 @@ struct SettingsView: View {
 
     @State private var isResolvingManualLocation = false
     @State private var manualLocationStatus = ""
+    @State private var locationAuthorization = CLLocationManager().authorizationStatus
 
     private let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.4"
 
@@ -45,6 +46,20 @@ struct SettingsView: View {
             }
 
             Section {
+                LabeledContent("System permission", value: locationAuthorizationDescription)
+
+                if locationAuthorizationNeedsAttention {
+                    Button {
+                        openLocationPrivacySettings()
+                    } label: {
+                        Label("Open Location Services Settings", systemImage: "location.slash")
+                    }
+
+                    Text("Without permission, SunStatus falls back to San Francisco. Grant access in System Settings > Privacy & Security > Location Services, or set a manual location below.")
+                        .font(.caption)
+                        .foregroundStyle(Color(nsColor: .systemRed))
+                }
+
                 Toggle("Use manual location", isOn: $useManualLocation)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -106,6 +121,7 @@ struct SettingsView: View {
         .frame(minHeight: 560)
         .onAppear {
             updateManualLocationStatus()
+            locationAuthorization = CLLocationManager().authorizationStatus
         }
         .onChange(of: showDockIcon) { _, newValue in
             AppDelegate.setShowsDockIcon(newValue)
@@ -114,6 +130,38 @@ struct SettingsView: View {
             updateManualLocationStatus()
             notifyManualLocationChanged()
         }
+    }
+
+    private var locationAuthorizationDescription: String {
+        switch locationAuthorization {
+        case .notDetermined:
+            return "Not requested yet"
+        case .authorizedAlways, .authorizedWhenInUse:
+            return "Granted"
+        case .denied:
+            return "Denied"
+        case .restricted:
+            return "Restricted"
+        @unknown default:
+            return "Unknown"
+        }
+    }
+
+    private var locationAuthorizationNeedsAttention: Bool {
+        switch locationAuthorization {
+        case .denied, .restricted:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func openLocationPrivacySettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices") else {
+            return
+        }
+
+        NSWorkspace.shared.open(url)
     }
 
     private var coordinateText: String {
