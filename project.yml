@@ -97,9 +97,9 @@ targets:
     settings:
       base:
         COMBINE_HIDPI_IMAGES: YES
-        CURRENT_PROJECT_VERSION: "0.4.1"
+        CURRENT_PROJECT_VERSION: "0.4.2"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
-        MARKETING_VERSION: "0.4.1"
+        MARKETING_VERSION: "0.4.2"
         PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatus
         PRODUCT_NAME: SunStatus
     postCompileScripts:
@@ -162,9 +162,9 @@ targets:
     settings:
       base:
         APPLICATION_EXTENSION_API_ONLY: YES
-        CURRENT_PROJECT_VERSION: "0.4.1"
+        CURRENT_PROJECT_VERSION: "0.4.2"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
-        MARKETING_VERSION: "0.4.1"
+        MARKETING_VERSION: "0.4.2"
         PRODUCT_BUNDLE_IDENTIFIER: com.discolotus.SunStatus.WidgetExtension
         PRODUCT_NAME: SunStatusWidgetExtension
 schemes:

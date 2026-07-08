@@ -119,7 +119,7 @@ swift test
 Build release artifacts locally:
 
 ```sh
-scripts/build-release.sh 0.4.1
+scripts/build-release.sh 0.4.2
 ```
 
 The script outputs `.build/release/SunStatus.zip` and `.build/release/SunStatus.dmg`, builds the Xcode app and WidgetKit extension targets, embeds the extension, generates `Resources/AppIcon.icns` from `Assets/AppIcon.png`, codesigns the bundle ad hoc, mounts and verifies the DMG contents, and prints SHA-256 checksums.
@@ -127,7 +127,7 @@ The script outputs `.build/release/SunStatus.zip` and `.build/release/SunStatus.
 After building a release locally, update the Homebrew cask with the DMG checksum:
 
 ```sh
-scripts/update-homebrew-cask.sh 0.4.1 <SunStatus.dmg sha256>
+scripts/update-homebrew-cask.sh 0.4.2 <SunStatus.dmg sha256>
 ```
 
 Tagged GitHub releases publish `.zip`, `.dmg`, `SHA256SUMS`, and a cask patch. The `discolotus/homebrew-sunstatus` tap also runs an hourly sync that updates the cask from the latest SunStatus release. For immediate tap updates after a release, configure the `HOMEBREW_TAP_TOKEN` repository secret with a fine-grained GitHub token for `discolotus/homebrew-sunstatus` that has Actions read/write permission.
