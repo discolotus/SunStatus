@@ -68,6 +68,41 @@ final class SolarDaylightProviderWeatherTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(clearPoint.cloudCover), 0.05, accuracy: 0.02)
     }
 
+    func testStatusUsesForecastCloudCoverForQueriedTime() throws {
+        // The fetch-time "current" cloud cover (0.2) is hours stale by solar noon;
+        // the hourly forecast says solar noon is heavily overcast.
+        let weather = WeatherSnapshot(
+            cloudCover: 0.2,
+            uvIndex: nil,
+            visibilityMeters: nil,
+            cloudCoverForecast: [
+                CloudCoverSample(date: date(hour: 7), cloudCover: 0.05),
+                CloudCoverSample(date: date(hour: 13), cloudCover: 0.85),
+                CloudCoverSample(date: date(hour: 19), cloudCover: 0.15),
+            ]
+        )
+        let provider = SolarDaylightProvider(
+            coordinate: coordinate,
+            timezone: pacific,
+            weather: weather
+        )
+
+        let noonStatus = provider.status(at: date(hour: 13))
+        XCTAssertEqual(try XCTUnwrap(noonStatus.brightness.cloudCover), 0.85, accuracy: 0.001)
+
+        let morningStatus = provider.status(at: date(hour: 7))
+        XCTAssertEqual(try XCTUnwrap(morningStatus.brightness.cloudCover), 0.05, accuracy: 0.001)
+
+        // Overcast noon should score darker than the nearly clear morning would
+        // if it shared noon's sun elevation - verify attenuation actually applied.
+        let clearNoonStatus = SolarDaylightProvider(
+            coordinate: coordinate,
+            timezone: pacific,
+            weather: WeatherSnapshot(cloudCover: 0.05, uvIndex: nil, visibilityMeters: nil)
+        ).status(at: date(hour: 13))
+        XCTAssertLessThan(noonStatus.brightness.score, clearNoonStatus.brightness.score)
+    }
+
     func testOvercastReducesBrightnessScore() {
         let clearProvider = SolarDaylightProvider(
             coordinate: coordinate,

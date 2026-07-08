@@ -34,13 +34,16 @@ final class StatusBarController: NSObject, NSPopoverDelegate, NSWindowDelegate {
         configureManualLocationUpdates()
         refresh()
 
-        timer = Timer.scheduledTimer(
+        // .common mode keeps the icon updating while menus or popovers are tracking.
+        let timer = Timer(
             timeInterval: 60,
             target: self,
             selector: #selector(refreshFromTimer),
             userInfo: nil,
             repeats: true
         )
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func configureStatusButton() {

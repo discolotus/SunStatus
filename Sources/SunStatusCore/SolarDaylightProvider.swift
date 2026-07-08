@@ -48,7 +48,7 @@ public struct SolarDaylightProvider: DaylightProviding {
             daylightProgress: progress
         )
 
-        let cloudCover = weather?.cloudCover
+        let cloudCover = weather?.cloudCover(at: date)
         let uvIndex = weather?.uvIndex ?? clearSkyUVIndex(elevationDegrees: position.elevationDegrees)
         let score = brightnessScore(elevationDegrees: position.elevationDegrees, cloudCover: cloudCover)
 
@@ -131,8 +131,6 @@ public struct SolarDaylightProvider: DaylightProviding {
             )
         }
     }
-
-    private var cloudCover: Double? { weather?.cloudCover }
 
     private func daylightSpan(for date: Date, events: SolarDayEvents) -> (start: Date, end: Date) {
         if let sunrise = events.sunrise, let sunset = events.sunset, sunset > sunrise {

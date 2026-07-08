@@ -16,8 +16,14 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
     private let lock = NSLock()
     private var locationState = LocationState.pending
     private var cachedWeather: WeatherSnapshot?
+    private var refreshTimer: Timer?
+    private var retryTask: Task<Void, Never>?
 
     private let weatherService = WeatherService()
+
+    /// Delay before retrying `requestLocation()` after a transient failure
+    /// (e.g. `kCLErrorLocationUnknown`), which is common right after launch.
+    private let failureRetryDelay: TimeInterval = 30
 
     override init() {
         super.init()
@@ -25,9 +31,22 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
+    deinit {
+        refreshTimer?.invalidate()
+        retryTask?.cancel()
+    }
+
     func start() {
         DispatchQueue.main.async { [weak self] in
-            self?.updateAuthorization()
+            guard let self else { return }
+            self.updateAuthorization()
+            self.scheduleRefreshTimer()
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(self.userDefaultsDidChange),
+                name: UserDefaults.didChangeNotification,
+                object: nil
+            )
         }
     }
 
@@ -62,45 +81,123 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        scheduleFailureRetry()
+
         guard currentLocationState().isPending else {
             return
         }
 
-        setLocationState(.fallback("Location unavailable"))
-        refreshWeather(for: LocationState.fallback("").coordinate)
+        let fallback = LocationState.fallback("Location unavailable")
+        setLocationState(fallback)
+        refreshWeather(for: fallback.coordinate)
     }
 
     private func updateAuthorization() {
-        guard CLLocationManager.locationServicesEnabled() else {
-            setLocationState(.fallback("Location unavailable"))
-            return
-        }
-
         switch manager.authorizationStatus {
         case .notDetermined:
             setLocationState(.pending)
             manager.requestWhenInUseAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            setLocationState(.pending)
+            // Keep showing the last good coordinate while a fresh fix is requested.
+            if !currentLocationState().isCurrent {
+                setLocationState(.pending)
+            }
             manager.requestLocation()
         case .denied:
-            setLocationState(.fallback("Location denied"))
-            refreshWeather(for: LocationState.fallback("").coordinate)
+            applyFallback(.fallback("Location denied"))
         case .restricted:
-            setLocationState(.fallback("Location restricted"))
-            refreshWeather(for: LocationState.fallback("").coordinate)
+            applyFallback(.fallback("Location restricted"))
         @unknown default:
-            setLocationState(.fallback("Location unavailable"))
+            applyFallback(.fallback("Location unavailable"))
         }
     }
 
-    private func refreshWeather(for coordinate: Coordinate) {
-        Task { [weak self] in
-            guard let self else { return }
-            let snapshot = await self.weatherService.weather(for: coordinate)
-            self.setWeather(snapshot)
+    // MARK: - Periodic refresh
+
+    /// Refresh cadence follows the "Update interval" setting (1-30 minutes, default 5).
+    /// The weather service caches responses, so short intervals stay cheap.
+    private static func preferredRefreshInterval() -> TimeInterval {
+        let minutes = UserDefaults.standard.double(forKey: "updateIntervalMinutes")
+        guard minutes >= 1 else {
+            return 5 * 60
+        }
+
+        return min(max(minutes, 1), 30) * 60
+    }
+
+    private func scheduleRefreshTimer() {
+        refreshTimer?.invalidate()
+
+        let interval = Self.preferredRefreshInterval()
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            self?.periodicRefresh()
+        }
+        timer.tolerance = interval * 0.1
+        RunLoop.main.add(timer, forMode: .common)
+        refreshTimer = timer
+    }
+
+    @objc private func userDefaultsDidChange() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let refreshTimer = self.refreshTimer else { return }
+
+            if refreshTimer.timeInterval != Self.preferredRefreshInterval() {
+                self.scheduleRefreshTimer()
+            }
         }
     }
+
+    private func periodicRefresh() {
+        switch manager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            // Re-fetch weather for the last known coordinate even if the location
+            // fix doesn't change, and ask for a fresh fix in case it did.
+            refreshWeather(for: currentLocationState().coordinate)
+            manager.requestLocation()
+        case .notDetermined:
+            // Still no answer after a full interval - stop claiming "Locating..."
+            // but keep asking; granting later recovers via the delegate callback.
+            if currentLocationState().isPending {
+                applyFallback(.fallback("Location unavailable"))
+            }
+            manager.requestWhenInUseAuthorization()
+        case .denied, .restricted:
+            refreshWeather(for: currentLocationState().coordinate)
+        @unknown default:
+            refreshWeather(for: currentLocationState().coordinate)
+        }
+    }
+
+    private func scheduleFailureRetry() {
+        guard retryTask == nil else {
+            return
+        }
+
+        let delay = failureRetryDelay
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.retryTask = nil
+
+                switch self.manager.authorizationStatus {
+                case .authorizedAlways, .authorizedWhenInUse:
+                    self.manager.requestLocation()
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    private func applyFallback(_ state: LocationState) {
+        setLocationState(state)
+        refreshWeather(for: state.coordinate)
+    }
+
+    // MARK: - State
 
     private func currentLocationState() -> LocationState {
         lock.lock()
@@ -112,6 +209,14 @@ final class LocationAwareDaylightProvider: NSObject, RefreshingDaylightProviding
         lock.lock()
         defer { lock.unlock() }
         return cachedWeather
+    }
+
+    private func refreshWeather(for coordinate: Coordinate) {
+        Task { [weak self] in
+            guard let self else { return }
+            let snapshot = await self.weatherService.weather(for: coordinate)
+            self.setWeather(snapshot)
+        }
     }
 
     private func setLocationState(_ state: LocationState) {
@@ -177,6 +282,14 @@ private enum LocationState: Equatable {
 
     var isPending: Bool {
         if case .pending = self {
+            return true
+        }
+
+        return false
+    }
+
+    var isCurrent: Bool {
+        if case .current = self {
             return true
         }
 
