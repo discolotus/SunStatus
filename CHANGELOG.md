@@ -4,6 +4,23 @@ All notable changes to SunStatus will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-07
+
+### Added
+
+- Added the system location permission state to Settings, with a shortcut to Location Services when access is denied or restricted.
+
+### Changed
+
+- Wired the previously unused "Update interval" setting to the weather and location refresh cadence (1-30 minutes, default 5).
+
+### Fixed
+
+- Fixed the menu bar icon and status freezing at launch conditions: weather now refreshes periodically, and brightness and cloud-cover readouts use the hourly forecast interpolated to the current time instead of the fetch-time value.
+- Fixed a permanent San Francisco fallback after a transient location failure: location requests retry after 30 seconds and re-check on every update interval.
+- Fixed the menu bar refresh timer pausing while menus or popovers were tracking.
+- Removed a main-thread location-services check that could block the UI at startup.
+
 ## [0.4.1] - 2026-07-07
 
 ### Added
